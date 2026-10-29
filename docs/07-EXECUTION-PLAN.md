@@ -408,7 +408,7 @@ Tidak ada keputusan diam-diam: jika spike melebihi batas waktu, ambil pilihan ya
 
 | ID | Keputusan | Alasan | Tanggal |
 |----|-----------|--------|---------|
-| T-002 (DB) | _belum diputuskan_ | — | — |
+| T-002 (DB) | **drift 2.35.x** | Isar tidak bisa hidup berdampingan dengan toolchain drift (konflik analyzer/build, rilis resmi mati); drift terbukti end-to-end (3 test hijau). Lengkap: `spikes/db_drift/RESULT.md` | 2026-10-30 |
 | T-003 (State) | _belum diputuskan_ | — | — |
 | T-004 (Listener) | _belum diputuskan_ | — | — |
 

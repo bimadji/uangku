@@ -410,7 +410,7 @@ Tidak ada keputusan diam-diam: jika spike melebihi batas waktu, ambil pilihan ya
 |----|-----------|--------|---------|
 | T-002 (DB) | **drift 2.35.x** | Isar tidak bisa hidup berdampingan dengan toolchain drift (konflik analyzer/build, rilis resmi mati); drift terbukti end-to-end (3 test hijau). Lengkap: `spikes/db_drift/RESULT.md` | 2026-10-30 |
 | T-003 (State) | **Riverpod** | FutureProvider/when tanpa boilerplate async; unit test state tanpa widget tree (terbukti spike); arah StreamProvider cocok feed reaktif M2. Lengkap: `spikes/state/RESULT.md` | 2026-10-30 |
-| T-004 (Listener) | _belum diputuskan_ | — | — |
+| T-004 (Listener) | **Bridge Kotlin custom** (fallback: plugin) | Filter packageName di Kotlin sebelum bangunkan Dart isolate (kunci NFR-03 baterai); menyatukan listener + 4 MethodChannel + TileService dalam 1 native bridge (~60 baris); 0 third-party dep. Lengkap: `spikes/listener/RESULT.md` | 2026-10-30 |
 
 ---
 

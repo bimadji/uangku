@@ -409,7 +409,7 @@ Tidak ada keputusan diam-diam: jika spike melebihi batas waktu, ambil pilihan ya
 | ID | Keputusan | Alasan | Tanggal |
 |----|-----------|--------|---------|
 | T-002 (DB) | **drift 2.35.x** | Isar tidak bisa hidup berdampingan dengan toolchain drift (konflik analyzer/build, rilis resmi mati); drift terbukti end-to-end (3 test hijau). Lengkap: `spikes/db_drift/RESULT.md` | 2026-10-30 |
-| T-003 (State) | _belum diputuskan_ | — | — |
+| T-003 (State) | **Riverpod** | FutureProvider/when tanpa boilerplate async; unit test state tanpa widget tree (terbukti spike); arah StreamProvider cocok feed reaktif M2. Lengkap: `spikes/state/RESULT.md` | 2026-10-30 |
 | T-004 (Listener) | _belum diputuskan_ | — | — |
 
 ---

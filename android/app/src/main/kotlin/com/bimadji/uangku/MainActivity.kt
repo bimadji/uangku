@@ -3,6 +3,8 @@ package com.bimadji.uangku
 import android.app.Notification
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
@@ -50,6 +52,21 @@ class MainActivity : FlutterActivity() {
                 "isBatteryOptimizationIgnored" -> {
                     val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
                     result.success(pm.isIgnoringBatteryOptimizations(packageName))
+                }
+                "requestPostNotificationsPermission" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==
+                                PackageManager.PERMISSION_GRANTED
+                        if (!granted) {
+                            requestPermissions(
+                                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                                9001
+                            )
+                        }
+                        result.success(granted)
+                    } else {
+                        result.success(true)
+                    }
                 }
                 else -> result.notImplemented()
             }

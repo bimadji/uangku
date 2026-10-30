@@ -1,4 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Izin menampilkan notifikasi interaktif Uangku (FR-05) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
         android:label="uangku"
         android:name="${applicationName}"

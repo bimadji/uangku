@@ -55,6 +55,13 @@ class PlatformBridge {
     return result ?? false;
   }
 
+  /// Meminta izin runtime POST_NOTIFICATIONS (Android 13+, FR-05)
+  static Future<bool> requestPostNotificationsPermission() async {
+    final result = await _platformChannel
+        .invokeMethod<bool>('requestPostNotificationsPermission');
+    return result ?? false;
+  }
+
   /// Stream notifikasi masuk secara real-time dari OS
   static Stream<RawNotification> get notificationStream {
     return _eventChannel

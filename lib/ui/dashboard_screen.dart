@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:uangku/data/database.dart';
 import 'package:uangku/data/transaction_repository.dart';
+import 'package:uangku/services/platform_bridge.dart';
 
 // ---- Riverpod Providers ----
 
@@ -34,7 +35,121 @@ final categoryListProvider = FutureProvider<List<Category>>((ref) async {
   return db.select(db.categories).get();
 });
 
+final listenerStatusProvider = FutureProvider<bool>((ref) async {
+  return PlatformBridge.isListenerEnabled();
+});
+
+final batteryStatusProvider = FutureProvider<bool>((ref) async {
+  return PlatformBridge.isBatteryOptimizationIgnored();
+});
+
 // ---- UI Komponen Inti (DBD §5) ----
+
+/// Banner status listener + whitelist baterai (DBD §5, AFD §8, mitigasi R-04)
+class StatusBanner extends ConsumerWidget {
+  const StatusBanner({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listener = ref.watch(listenerStatusProvider);
+    final battery = ref.watch(batteryStatusProvider);
+
+    return listener.when(
+      loading: () => const SizedBox.shrink(),
+      error: (e, _) => const SizedBox.shrink(),
+      data: (listenerEnabled) {
+        final batteryOk = switch (battery) {
+          AsyncData(:final value) => value,
+          _ => false,
+        };
+        if (listenerEnabled && batteryOk) {
+          // Semua izin lengkap → banner hijau singkat sebagai affirmation
+          return Container(
+            margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFDCFCE7),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF86EFAC)),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.check_circle, size: 16, color: Color(0xFF16A34A)),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Listener otomatis aktif (BTN & GoPay)',
+                    style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF14532D)),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Ada izin yang belum lengkap → banner peringatan
+        final (bg, border, fg, icon, message) = listenerEnabled
+            ? (
+                const Color(0xFFFEF3C7),
+                const Color(0xFFFCD34D),
+                const Color(0xFF78350F),
+                Icons.warning_amber_rounded,
+                'Optimasi baterai belum diaktifkan — listener bisa dimatikan OS',
+              )
+            : (
+                const Color(0xFFFEE2E2),
+                const Color(0xFFFCA5A5),
+                const Color(0xFF7F1D1D),
+                Icons.error_outline,
+                'Akses notifikasi belum aktif — transaksi digital tidak tercatat otomatis',
+              );
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: border),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: fg),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w500, color: fg),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (!listenerEnabled) {
+                    PlatformBridge.openNotificationAccessSettings();
+                  }
+                  ref.invalidate(listenerStatusProvider);
+                  ref.invalidate(batteryStatusProvider);
+                },
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(48, 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                ),
+                child: Text(
+                  'Perbaiki',
+                  style: TextStyle(fontSize: 12, color: fg),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
 class SourceBadge extends StatelessWidget {
   const SourceBadge({super.key, required this.source});
@@ -561,6 +676,7 @@ class _DashboardTab extends ConsumerWidget {
       },
       child: ListView(
         children: [
+          const StatusBanner(),
           const CashFlowCard(),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -601,17 +717,77 @@ class _FeedTab extends ConsumerWidget {
   }
 }
 
-class _SettingsTab extends StatelessWidget {
+class _SettingsTab extends ConsumerWidget {
   const _SettingsTab();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final listener = ref.watch(listenerStatusProvider);
+    final battery = ref.watch(batteryStatusProvider);
+
     return ListView(
       padding: const EdgeInsets.all(16),
-      children: const [
-        Text('Uangku v1.0.0 (MVP)', style: TextStyle(fontWeight: FontWeight.bold)),
-        SizedBox(height: 8),
-        Text('Penyimpanan 100% lokal. Tanpa server, tanpa login (FR-12).',
+      children: [
+        const Text('Status Otomatisasi',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 12),
+        Card(
+          margin: EdgeInsets.zero,
+          child: Column(
+            children: [
+              ListTile(
+                title: const Text('Notification Access',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                subtitle: const Text('Menangkap notifikasi BTN & GoPay',
+                    style: TextStyle(fontSize: 12)),
+                trailing: listener.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (e, _) => const SizedBox.shrink(),
+                  data: (enabled) => Text(
+                    enabled ? 'AKTIF' : 'MATI',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: enabled
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFDC2626),
+                    ),
+                  ),
+                ),
+                onTap: () async {
+                  await PlatformBridge.openNotificationAccessSettings();
+                  ref.invalidate(listenerStatusProvider);
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                title: const Text('Whitelist Baterai (OEM)',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                subtitle: const Text('Mencegah OS mematikan listener',
+                    style: TextStyle(fontSize: 12)),
+                trailing: battery.when(
+                  loading: () => const SizedBox.shrink(),
+                  error: (e, _) => const SizedBox.shrink(),
+                  data: (ignored) => Text(
+                    ignored ? 'AKTIF' : 'CEK SETELAN',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: ignored
+                          ? const Color(0xFF16A34A)
+                          : const Color(0xFFD97706),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text('Uangku v1.0.0 (MVP)',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        const Text('Penyimpanan 100% lokal. Tanpa server, tanpa login (FR-12).',
             style: TextStyle(color: Colors.grey)),
       ],
     );

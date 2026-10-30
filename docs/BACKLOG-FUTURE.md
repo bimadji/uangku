@@ -91,6 +91,7 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Transaksi Bale otomatis akan tersimpan dengan nominal 0 (butuh koreksi manual tiap kali — berbeda dari target < 5 detik FR-07). Notifikasi belanja GoPay berstatus `failed` di log dan data hilang sampai pattern didaftarkan. Rule regex salah ketik tidak memberi umpan balik ke pengguna.
 - Terkait: `lib/services/parser_engine.dart`, `parser_rules` di `docs/05-BSD.md` §1.3 & §5, OQ-01, OQ-02, FR-02, NFR-06.
 - Saran: Pattern baru ditambahkan di T-020 (editor rule in-app) atau T-026 (kalibrasi) begitu sampel lengkap; pesan error regex invalid masuk T-020.
+- Catatan: `seedInitialRules()` awalnya tidak dipanggil dari `main.dart` (rule tidak pernah masuk DB di runtime) — **Selesai di T-017** saat startup dirapikan.
 
 ## T-013: DedupService + UNIQUE dedup_hash
 - Dilewati: Toleransi 60 detik **bersifat statis** (tidak bisa diubah pengguna). Hash memakai SHA-256 `crypto` — dependency tambahan, bukan hash bawaan SDK Dart. Pengecekan window ±60 detik hanya membandingkan **merchant** yang persis sama setelah uppercase/trim; dua notifikasi duplikat dengan merchant berbeda (mis. "GEPREK MASZEH ITS" vs "Geprek Maszeh") tidak terdeteksi sebagai duplikat. Tidak ada dialog konfirmasi untuk kasus ambigu (dua transaksi sah dengan nominal & merchant sama < 60 detik) — transaksi kedua langsung tertahan.
@@ -109,3 +110,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: `POST_NOTIFICATIONS` yang ditolak pengguna tidak punya alur permintaan ulang di Pengaturan — notifikasi interaktif FR-05 tidak akan bisa muncul selama izin tidak di-backup. Banner hijau permanen permanen memakan ruang vertikal di Dashboard kecil. Status izin yang berubah di luar app (user mencabut izin lewat Settings) tidak terupdate sampai app dibuka ulang.
 - Terkait: `lib/ui/onboarding_screen.dart`, `lib/ui/dashboard_screen.dart`, `lib/main.dart`, FR-01, FR-05, NFR-01, `docs/03-AFD.md` §2, `docs/04-DBD.md` §3.
 - Saran: Penambahan tombol permintaan ulang + refresh status saat `resume` masuk T-024 atau T-020 (layar Pengaturan sudah ada). Butuh keputusan pengguna apakah banner hijau permanen acceptable atau hanya muncul saat ada masalah.
+
+## T-017: CategorizerService (M3.1)
+- Dilewati: Keyword bersifat **hardcode di Dart**, bukan data yang bisa diedit pengguna (padahal BSD §1.2 menyebut "editable in-app fase lanjutan"). Pencocokan memakai `contains` substring sederhana tanpa batas kata, sehingga "MAKAN" juga cocok pada "MAKANAN LAIN" dan "AYAM" cocok pada "AYAMGOYENG". Tidak ada normalisasi typo, singkatan, atau ejaan alternatif. Tidak ada UI kelola kategori. Kategori hasil kategorisasi belum disambungkan ke alur penyimpanan transaksi (masih dipanggil manual dari test).
+- Risiko: Keyword hardcode berarti kalibrasi hanya lewat ubah kode + build ulang, bertentangan dengan semangat NFR-06. Substring tanpa batas kata berisiko salah kategori (mis. "AYAM" pada nama merchant non-makanan).
+- Terkait: `lib/services/categorizer_service.dart`, `lib/main.dart`, FR-04, NFR-06, `docs/05-BSD.md` §1.2.
+- Saran: Editor keyword in-app masuk T-020 atau fase 2; perbaiki pencocokan jadi batas kata saat kalibrasi T-026.

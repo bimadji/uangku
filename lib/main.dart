@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uangku/data/database.dart';
+import 'package:uangku/services/categorizer_service.dart';
+import 'package:uangku/services/parser_engine.dart';
 import 'package:uangku/services/platform_bridge.dart';
 import 'package:uangku/ui/dashboard_screen.dart';
 import 'package:uangku/ui/onboarding_screen.dart';
@@ -16,6 +18,8 @@ void main() async {
   final file = File(p.join(dbFolder.path, 'uangku.sqlite'));
   final db = AppDatabase(NativeDatabase(file));
   await db.seedCategories();
+  await CategorizerService(db).seedKeywords();
+  await ParserEngine(db).seedInitialRules();
 
   runApp(
     ProviderScope(

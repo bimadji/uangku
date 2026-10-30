@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
+import 'package:drift/drift.dart' show Value;
 import 'package:uangku/data/database.dart';
 import 'package:uangku/data/transaction_repository.dart';
 
@@ -155,6 +156,9 @@ class TransactionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isExpense = tx.type == TxType.expense;
     return ListTile(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => TransactionDetailScreen(tx: tx)),
+      ),
       leading: CircleAvatar(
         backgroundColor: isExpense ? Colors.red.shade50 : Colors.green.shade50,
         child: Icon(
@@ -185,6 +189,200 @@ class TransactionTile extends StatelessWidget {
           fontWeight: FontWeight.bold,
           color: isExpense ? Colors.red : Colors.green,
         ),
+      ),
+    );
+  }
+}
+
+// ---- TransactionDetailScreen (AFD §5, DBD §6, FR-06) ----
+
+class TransactionDetailScreen extends ConsumerStatefulWidget {
+  const TransactionDetailScreen({super.key, required this.tx});
+  final Transaction tx;
+
+  @override
+  ConsumerState<TransactionDetailScreen> createState() =>
+      _TransactionDetailScreenState();
+}
+
+class _TransactionDetailScreenState
+    extends ConsumerState<TransactionDetailScreen> {
+  late final TextEditingController _amountController;
+  late final TextEditingController _merchantController;
+  late final TextEditingController _noteController;
+  late int _categoryId;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _amountController =
+        TextEditingController(text: widget.tx.amount.toString());
+    _merchantController =
+        TextEditingController(text: widget.tx.merchant ?? '');
+    _noteController = TextEditingController(text: widget.tx.note ?? '');
+    _categoryId = widget.tx.categoryId;
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _merchantController.dispose();
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final amount = int.tryParse(_amountController.text);
+    if (amount == null || amount <= 0 || _saving) return;
+    setState(() => _saving = true);
+
+    final db = ref.read(databaseProvider);
+    await (db.update(db.transactions)..where((t) => t.id.equals(widget.tx.id)))
+        .write(
+      TransactionsCompanion(
+        amount: Value(amount),
+        categoryId: Value(_categoryId),
+        merchant: Value(_merchantController.text.trim().isEmpty
+            ? null
+            : _merchantController.text.trim()),
+        note: Value(_noteController.text.trim().isEmpty
+            ? null
+            : _noteController.text.trim()),
+      ),
+    );
+
+    ref.invalidate(cashFlowProvider);
+    ref.invalidate(feedProvider);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Hapus Transaksi?'),
+        content: const Text('Transaksi ini akan dihapus permanen.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final db = ref.read(databaseProvider);
+    await (db.delete(db.transactions)..where((t) => t.id.equals(widget.tx.id)))
+        .go();
+
+    ref.invalidate(cashFlowProvider);
+    ref.invalidate(feedProvider);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = ref.watch(categoryListProvider);
+    final date = DateTime.fromMillisecondsSinceEpoch(widget.tx.occurredAt);
+    final dateStr =
+        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Detail Transaksi'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: _saving ? null : _delete,
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      SourceBadge(source: widget.tx.source),
+                      const SizedBox(width: 8),
+                      ModeChip(origin: widget.tx.origin),
+                    ],
+                  ),
+                  Text(dateStr,
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.grey.shade600)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Nominal (Rp)',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _merchantController,
+            decoration: const InputDecoration(
+              labelText: 'Merchant / Keterangan',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _noteController,
+            decoration: const InputDecoration(
+              labelText: 'Catatan Pribadi',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text('Kategori:',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          categories.maybeWhen(
+            data: (cats) => Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final c in cats
+                    .where((c) => c.kind.name == widget.tx.type.name))
+                  ChoiceChip(
+                    label: Text(c.name),
+                    selected: _categoryId == c.id,
+                    onSelected: (_) => setState(() => _categoryId = c.id),
+                  ),
+              ],
+            ),
+            orElse: () => const SizedBox.shrink(),
+          ),
+          const SizedBox(height: 24),
+          FilledButton(
+            onPressed: _saving ? null : _save,
+            child: _saving
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Simpan Perubahan'),
+          ),
+        ],
       ),
     );
   }

@@ -1,5 +1,6 @@
 // Test T-008: Dashboard + Feed (FR-08, FR-09).
 
+import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -143,5 +144,65 @@ void main() {
     final saveBtn = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Simpan'));
     expect(saveBtn.onPressed, isNull);
+  });
+
+  testWidgets('TransactionDetailScreen: buka detail, edit merchant/nominal, simpan',
+      (tester) async {
+    await repo.insert(TransactionsCompanion.insert(
+      amount: 20000,
+      type: TxType.expense,
+      categoryId: catFood,
+      source: TxSource.BTN,
+      origin: TxOrigin.auto,
+      merchant: const Value('Warung Lama'),
+      occurredAt: DateTime.now().millisecondsSinceEpoch,
+      dedupHash: 'h-edit',
+    ));
+
+    await pumpApp(tester);
+    await tester.tap(find.text('Warung Lama'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Detail Transaksi'), findsOneWidget);
+
+    // Edit merchant
+    await tester.enterText(
+        find.widgetWithText(TextField, 'Merchant / Keterangan'), 'Warung Baru');
+    await tester.tap(find.text('Simpan Perubahan'));
+    await tester.pumpAndSettle();
+
+    // Kembali ke layar utama, merchant terupdate
+    expect(find.text('Warung Baru'), findsOneWidget);
+    final rows = await repo.feed();
+    expect(rows.first.merchant, 'Warung Baru');
+  });
+
+  testWidgets('TransactionDetailScreen: hapus transaksi lewat konfirmasi dialog',
+      (tester) async {
+    await repo.insert(TransactionsCompanion.insert(
+      amount: 15000,
+      type: TxType.expense,
+      categoryId: catFood,
+      source: TxSource.GOPAY,
+      origin: TxOrigin.auto,
+      merchant: const Value('Item Hapus'),
+      occurredAt: DateTime.now().millisecondsSinceEpoch,
+      dedupHash: 'h-del',
+    ));
+
+    await pumpApp(tester);
+    await tester.tap(find.text('Item Hapus'));
+    await tester.pumpAndSettle();
+
+    // Tap icon delete
+    await tester.tap(find.byIcon(Icons.delete_outline));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hapus Transaksi?'), findsOneWidget);
+    await tester.tap(find.text('Hapus').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Item Hapus'), findsNothing);
+    expect(await repo.feed(), isEmpty);
   });
 }

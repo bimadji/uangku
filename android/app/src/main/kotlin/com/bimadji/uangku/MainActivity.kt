@@ -61,7 +61,7 @@ class MainActivity : FlutterActivity() {
                     eventSink = events
                 }
 
-                override fun cancel(arguments: Any?) {
+                override fun onCancel(arguments: Any?) {
                     eventSink = null
                 }
             }

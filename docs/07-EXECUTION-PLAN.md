@@ -6,8 +6,9 @@
 
 ---
 
-## 1. Alur Kerja Git (berlaku untuk SEMUA tugas)
+## 1. Aturan Kerja
 
+### 1.1 Alur Kerja Git (berlaku untuk SEMUA tugas)
 1. **Satu PR = satu tugas.** Setiap tugas dikerjakan di branch sendiri `feat/<id>-<slug>` (lihat tabel tugas).
 2. Alur: buat branch dari `main` → kerjakan → push → buka PR ke `main` → **semua test hijau sebelum merge** → merge.
 3. Test gagal = **perbaiki akar masalah**. Jangan pernah menghapus atau melemahkan test agar lulus.
@@ -17,6 +18,27 @@
 7. **Auth gagal = berhenti dan laporkan.** Tanpa fallback, tanpa workaround kredensial.
 8. **Tanpa force-push ke `main`; tanpa rewrite riwayat commit yang sudah ter-merge.**
 9. Pengecualian T-001: repo remote `github.com/bimadji/uangku` kosong (terverifikasi), jadi commit pertama (docs + `brainstorm-finance-app.md` apa adanya) langsung ke `main`, bukan via PR. Mulai T-002, semua via PR.
+
+### 1.2 Laporan Setelah Tiap Tugas (T-xxx)
+Setelah PR ter-merge (atau saat berhenti karena gagal), tulis ringkasan langsung di terminal sebagai balasan biasa. Jangan membuat file laporan atau changelog. Gunakan bahasa Indonesia yang mudah dipahami dan teks polos yang rapi di terminal (tanpa tabel, tanpa heading markdown, tanpa blok kode panjang).
+
+Format dasar:
+
+T-xxx: judul tugas | PR: <link> | check: <hijau/gagal>
+
+Lalu per file atau komponen yang berubah:
+  <path file>
+  Apa: ditambah / diubah / dihapus apa (nama kelas atau fungsi).
+  Gunanya: fungsi perubahan itu bagi aplikasi, bahasa sederhana.
+  Kenapa: alasannya (kaitkan ke FR/NFR, keputusan di docs, atau masalah yang ditemukan).
+
+Aturan laporan:
+- Kelompokkan per file/komponen, bukan per commit; perubahan sepele (format, import) cukup satu baris gabungan.
+- Sebutkan apa yang sengaja TIDAK diubah jika sekilas tampak perlu.
+- Laporkan penyimpangan dari plan (tugas bertambah, berkurang, berubah) beserta alasannya; perubahan di luar scope harus disebut terang-terangan.
+- Sebutkan test yang dijalankan dan hasilnya, serta hal yang belum bisa diverifikasi (misal butuh perangkat fisik) sebagai tugas manual untukku.
+- Tutup dengan satu baris: tugas berikutnya dan apakah ada yang menungguku.
+- Ringkas dan padat; jangan menempel kode panjang kecuali perlu.
 
 ## 2. Branch Protection (diaktifkan di T-001 via `gh api`)
 

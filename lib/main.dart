@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uangku/data/database.dart';
+import 'package:uangku/services/platform_bridge.dart';
 import 'package:uangku/ui/dashboard_screen.dart';
+import 'package:uangku/ui/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +38,29 @@ class UangkuApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
         useMaterial3: true,
       ),
-      home: const MainScreen(),
+      home: const _AppEntry(),
+    );
+  }
+}
+
+/// Onboarding ditampilkan hanya saat listener belum diizinkan; setelah itu
+/// user langsung masuk Dashboard (AFD §2, banner peringatan tetap muncul).
+class _AppEntry extends StatelessWidget {
+  const _AppEntry();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: PlatformBridge.isListenerEnabled(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final granted = snapshot.data ?? false;
+        return granted ? const MainScreen() : const OnboardingScreen();
+      },
     );
   }
 }

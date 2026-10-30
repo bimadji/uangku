@@ -40,6 +40,26 @@ Aturan laporan:
 - Tutup dengan satu baris: tugas berikutnya dan apakah ada yang menungguku.
 - Ringkas dan padat; jangan menempel kode panjang kecuali perlu.
 
+### 1.3 Backlog Hal yang Dilewati (`docs/BACKLOG-FUTURE.md`)
+Tiap kali menyelesaikan satu tugas T-xxx, catat **SEMUA** hal yang sengaja atau terpaksa dilewati ke `docs/BACKLOG-FUTURE.md` (buat file jika belum ada). Ini berbeda dari laporan terminal: laporan terminal tetap hanya di terminal, sedangkan backlog ini adalah satu-satunya file yang boleh diperbarui sebagai bagian dari laporan tugas.
+
+Yang dicatat: fitur atau detail yang tidak dikerjakan, edge case yang belum ditangani, keputusan yang ditunda, TODO yang ditinggalkan di kode, asumsi yang belum terverifikasi, dan verifikasi manual yang belum dilakukan. Termasuk hal kecil. Kalau tidak ada yang dilewati, tulis "Tidak ada" untuk tugas itu, jangan dilewatkan begitu saja.
+
+Format tiap entri (satu entri per hal yang dilewati):
+
+## T-xxx: judul tugas
+- Dilewati: apa yang tidak dikerjakan, spesifik.
+- Risiko: dampaknya bila dibiarkan, spesifik dan konkret.
+- Terkait: requirement (FR/NFR), file, atau tugas yang terdampak.
+- Saran: kapan atau tugas mana yang sebaiknya menanganinya (T-xxx berikutnya, fase 2, atau butuh keputusan pengguna).
+
+Aturan:
+1. **Jujur dan lengkap**: jangan menyaring hal yang dianggap sepele atau yang membuat hasil kerja tampak kurang. Risiko ditulis apa adanya, bukan dilunakkan.
+2. **Jangan menduplikasi**: kalau satu hal sudah tercatat dari tugas sebelumnya, perbarui entri lama (tambahkan keterangan) alih-alih menulis ulang. Kalau suatu tugas menyelesaikan item lama, tandai item itu "Selesai di T-xxx" dan jangan dihapus.
+3. **Perbarui file ini di PR yang sama dengan tugasnya** (alur Git yang berlaku: branch, PR, check hijau, merge, branch tidak dihapus).
+4. Di laporan terminal akhir tugas, tambahkan satu bagian **"Dilewati dan risiko"** yang meringkas entri baru, supaya pengguna tahu tanpa membuka file.
+5. Jangan memasukkan hal yang sebenarnya bagian dari scope tugas dan belum selesai; itu berarti tugasnya belum selesai, bukan backlog.
+
 ## 2. Branch Protection (diaktifkan di T-001 via `gh api`)
 
 Rencana langkah (dijalankan setelah workflow CI ada dan pernah hijau minimal sekali):

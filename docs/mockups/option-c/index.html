@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uangku Mockup - Opsi C: Compact High-Density</title>
+  <style>
+    :root {
+      --bg: #F1F5F9;
+      --surface: #FFFFFF;
+      --surface-hover: #F8FAFC;
+      --text-main: #020617;
+      --text-muted: #475569;
+      --border: #CBD5E1;
+      --accent: #0F172A;
+      --income: #047857;
+      --expense: #B91C1C;
+      --warn: #B45309;
+      --warn-bg: #FEF3C7;
+      --radius-sm: 4px;
+      --radius-md: 6px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    body { background: #94A3B8; padding: 32px 16px; color: var(--text-main); }
+    h1.gallery-title { text-align: center; margin-bottom: 8px; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+    p.gallery-sub { text-align: center; margin-bottom: 32px; color: #1E293B; font-size: 13px; }
+    .gallery { display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; }
+    .device {
+      width: 390px; height: 844px; background: var(--bg); border-radius: 40px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3); border: 10px solid #020617;
+      position: relative; overflow: hidden; display: flex; flex-direction: column;
+    }
+    .status-bar { height: 40px; padding: 12px 20px 0; display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; }
+    .screen-header { padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); background: var(--surface); }
+    .screen-title { font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+    .screen-content { flex: 1; overflow-y: auto; padding: 12px 16px 80px; display: flex; flex-direction: column; gap: 12px; }
+    .screen-content::-webkit-scrollbar { display: none; }
+
+    .nav-bar {
+      height: 64px; background: var(--surface); border-top: 2px solid var(--border);
+      position: absolute; bottom: 0; left: 0; right: 0; display: flex;
+      justify-content: space-around; align-items: center; padding-bottom: 8px;
+    }
+    .nav-item { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 700; color: var(--text-muted); text-decoration: none; min-width: 48px; min-height: 48px; justify-content: center; text-transform: uppercase; }
+    .nav-item.active { color: var(--text-main); background: #E2E8F0; border-radius: 4px; padding: 4px 10px; }
+
+    .tabular { font-variant-numeric: tabular-nums; }
+    .amount-income { color: var(--income); font-weight: 800; font-variant-numeric: tabular-nums; }
+    .amount-expense { color: var(--expense); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+    .badge-btn { display: inline-block; padding: 1px 4px; border: 1px solid #000; font-size: 9px; font-weight: 800; background: #FFF; color: #000; }
+    .badge-gopay { display: inline-block; padding: 1px 4px; border: 1px solid #000; font-size: 9px; font-weight: 800; background: #E0F2FE; color: #0369A1; }
+    .badge-cash { display: inline-block; padding: 1px 4px; border: 1px solid #000; font-size: 9px; font-weight: 800; background: #DCFCE7; color: #15803D; }
+
+    .chip-mode { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+
+    .panel { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; }
+    .panel-header { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; display: flex; justify-content: space-between; }
+
+    /* Segmented */
+    .segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: #E2E8F0; padding: 2px; border-radius: 4px; }
+    .segment-btn { border: 1px solid transparent; background: transparent; padding: 6px 0; font-size: 11px; font-weight: 700; text-transform: uppercase; cursor: pointer; min-height: 48px; display: flex; align-items: center; justify-content: center; }
+    .segment-btn.active { background: var(--surface); border-color: var(--border); color: var(--text-main); }
+
+    .dense-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--border); min-height: 48px; font-size: 12px; }
+    .dense-row:last-child { border-bottom: none; }
+
+    .fab {
+      position: absolute; right: 16px; bottom: 74px; height: 48px; padding: 0 16px;
+      border-radius: 4px; background: var(--text-main); color: var(--surface);
+      display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.25); text-decoration: none; z-index: 10; text-transform: uppercase;
+    }
+
+    .sheet-overlay { background: rgba(2, 6, 23, 0.7); position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; z-index: 20; }
+    .sheet { background: var(--surface); border-top: 3px solid var(--text-main); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+    .keypad-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    .key-btn { height: 48px; border: 1px solid var(--border); background: var(--bg); font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .chips-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    .cat-chip { min-height: 48px; border: 1px solid var(--border); background: var(--bg); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; text-align: center; cursor: pointer; }
+    .cat-chip.selected { background: var(--text-main); color: var(--surface); border-color: var(--text-main); }
+    .btn-save { min-height: 48px; background: var(--text-main); color: var(--surface); border: none; font-size: 13px; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+
+    .form-group { display: flex; flex-direction: column; gap: 4px; }
+    .form-label { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); }
+    .form-input { min-height: 48px; border: 2px solid var(--border); padding: 0 10px; font-size: 13px; color: var(--text-main); background: var(--surface); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1 class="gallery-title">Opsi C: Compact High-Density</h1>
+  <p class="gallery-sub">Inspirasi Terminal & Ledger Finansial: Monospace, garis tebal tegas, kepadatan data tinggi, tanpa dekorasi grafis</p>
+
+  <div class="gallery">
+
+    <!-- 1. DASHBOARD -->
+    <div class="device">
+      <div class="status-bar"><span>09:41</span><span>5G 98%</span></div>
+      <div class="screen-header">
+        <div class="screen-title">[UANGKU] v1.0</div>
+        <span class="badge-btn">LOKAL</span>
+      </div>
+
+      <div class="screen-content">
+        <!-- Status Banner -->
+        <div class="panel" style="background: #ECFDF5; border-color: #6EE7B7; padding: 6px 10px; font-size: 11px;">
+          <span>STATUS: <strong>LISTENER ON</strong> [BTN+GOPAY]</span>
+        </div>
+
+        <!-- Period Toggle -->
+        <div class="segmented">
+          <button class="segment-btn active">HARI</button>
+          <button class="segment-btn">MINGGU</button>
+          <button class="segment-btn">BULAN</button>
+        </div>
+
+        <!-- Summary Ledger Table -->
+        <div class="panel">
+          <div class="panel-header"><span>REKAP ARUS KAS [30/10]</span><span>IDR</span></div>
+          <div style="font-size: 26px; font-weight: 900; margin: 4px 0;" class="amount-expense">- Rp 47.000</div>
+          
+          <div style="border-top: 1px dashed var(--border); padding-top: 8px; font-size: 11px; display: flex; justify-content: space-between;">
+            <div>MASUK: <strong class="amount-income">+150.000</strong></div>
+            <div>NET: <strong class="tabular">+103.000</strong></div>
+          </div>
+        </div>
+
+        <!-- Category Matrix Table -->
+        <div class="panel">
+          <div class="panel-header"><span>DISTRIBUSI KATEGORI</span><span>%</span></div>
+          <div class="dense-row">
+            <span>[01] Makanan & Minuman</span>
+            <span class="tabular"><strong>28.000</strong> (60%)</span>
+          </div>
+          <div class="dense-row">
+            <span>[02] Transportasi</span>
+            <span class="tabular"><strong>14.000</strong> (30%)</span>
+          </div>
+          <div class="dense-row">
+            <span>[03] Lainnya / Jajan</span>
+            <span class="tabular"><strong>5.000</strong> (10%)</span>
+          </div>
+        </div>
+
+        <!-- Feed List -->
+        <div class="panel">
+          <div class="panel-header"><span>LOG TRANSAKSI TERAKHIR</span><span>3 BARIS</span></div>
+
+          <div class="dense-row">
+            <div>
+              <div style="font-weight: 800;">GEPREK MASZEH ITS</div>
+              <div style="font-size: 10px; color: var(--text-muted);"><span class="badge-btn">BTN</span> <span class="chip-mode">AUTO</span> 12:45</div>
+            </div>
+            <div class="amount-expense">-22.000</div>
+          </div>
+
+          <div class="dense-row">
+            <div>
+              <div style="font-weight: 800;">Gojek Sukolilo</div>
+              <div style="font-size: 10px; color: var(--text-muted);"><span class="badge-gopay">GOPAY</span> <span class="chip-mode">AUTO</span> 08:30</div>
+            </div>
+            <div class="amount-expense">-14.000</div>
+          </div>
+
+          <div class="dense-row">
+            <div>
+              <div style="font-weight: 800;">Es Teh Poci Kantin</div>
+              <div style="font-size: 10px; color: var(--text-muted);"><span class="badge-cash">CASH</span> <span class="chip-mode">MANUAL</span> KMRN</div>
+            </div>
+            <div class="amount-expense">-5.000</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fab">+ TUNAI</div>
+      <div class="nav-bar">
+        <a class="nav-item active">REKAP</a>
+        <a class="nav-item">DAFTAR</a>
+        <a class="nav-item">SETELAN</a>
+      </div>
+    </div>
+
+    <!-- 2. TRANSAKSI (FEED) -->
+    <div class="device">
+      <div class="status-bar"><span>09:41</span><span>5G 98%</span></div>
+      <div class="screen-header">
+        <div class="screen-title">LEDGER TRANSAKSI</div>
+        <span style="font-size: 11px; font-weight: 800;">[FILTER]</span>
+      </div>
+
+      <div class="screen-content">
+        <!-- Dense Filters -->
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;">
+          <div class="cat-chip selected" style="min-height: 36px; font-size: 10px;">ALL</div>
+          <div class="cat-chip" style="min-height: 36px; font-size: 10px;">BTN</div>
+          <div class="cat-chip" style="min-height: 36px; font-size: 10px;">GOPAY</div>
+          <div class="cat-chip" style="min-height: 36px; font-size: 10px;">CASH</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span>HARI INI (30 OKT)</span><span>TOTAL: -36.000</span></div>
+          <div class="dense-row">
+            <div>
+              <div><strong>GEPREK MASZEH ITS</strong></div>
+              <div style="font-size: 10px; color: var(--text-muted);"><span class="badge-btn">BTN</span> AUTO · 12:45 · Makanan</div>
+            </div>
+            <div class="amount-expense">-22.000</div>
+          </div>
+          <div class="dense-row">
+            <div>
+              <div><strong>Gojek Sukolilo</strong></div>
+              <div style="font-size: 10px; color: var(--text-muted);"><span class="badge-gopay">GOPAY</span> AUTO · 08:30 · Transport</div>
+            </div>
+            <div class="amount-expense">-14.000</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span>KEMARIN (29 OKT)</span><span>TOTAL: +466.500</span></div>
+          <div class="dense-row">
+            <div>
+              <div><strong>Transfer Masuk Ortu</strong></div>
+              <div style="font-size: 10px; color: var(--text-muted);"><span class="badge-btn">BTN</span> AUTO · 19:12 · Uang Saku</div>
+            </div>
+            <div class="amount-income">+500.000</div>
+          </div>
+          <div class="dense-row">
+            <div>
+              <div><strong>Es Teh Poci Kantin</strong></div>
+              <div style="font-size: 10px; color: var(--text-muted);"><span class="badge-cash">CASH</span> MANUAL · 13:00 · Makanan</div>
+            </div>
+            <div class="amount-expense">-5.000</div>
+          </div>
+          <div class="dense-row">
+            <div>
+              <div><strong>Indomaret Gebang</strong></div>
+              <div style="font-size: 10px; color: var(--text-muted);"><span class="badge-gopay">GOPAY</span> AUTO · 10:20 · Belanja</div>
+            </div>
+            <div class="amount-expense">-28.500</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fab">+ TUNAI</div>
+      <div class="nav-bar">
+        <a class="nav-item">REKAP</a>
+        <a class="nav-item active">DAFTAR</a>
+        <a class="nav-item">SETELAN</a>
+      </div>
+    </div>
+
+    <!-- 3. INPUT CEPAT TUNAI -->
+    <div class="device">
+      <div class="status-bar"><span>09:41</span><span>5G 98%</span></div>
+      
+      <div style="padding: 16px; opacity: 0.2;">
+        <div class="panel">LEDGER VIEW</div>
+      </div>
+
+      <div class="sheet-overlay">
+        <div class="sheet">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 6px;">
+            <span style="font-size: 12px; font-weight: 800;">INPUT CEPAT: TUNAI</span>
+            <span style="font-size: 10px; color: var(--text-muted);">&lt; 5 DETIK</span>
+          </div>
+
+          <div style="border: 2px solid var(--text-main); background: var(--bg); padding: 8px; text-align: center;">
+            <div style="font-size: 9px; font-weight: 800; color: var(--text-muted);">NOMINAL (IDR)</div>
+            <div style="font-size: 30px; font-weight: 900;" class="tabular">15.000</div>
+          </div>
+
+          <div style="font-size: 10px; font-weight: 800; color: var(--text-muted);">KATEGORI (1 TAP):</div>
+          <div class="chips-grid">
+            <div class="cat-chip selected">MAKANAN</div>
+            <div class="cat-chip">TRANSPORT</div>
+            <div class="cat-chip">JAJAN</div>
+            <div class="cat-chip">BELANJA</div>
+            <div class="cat-chip">KOS</div>
+            <div class="cat-chip">LAINNYA</div>
+          </div>
+
+          <div class="keypad-grid">
+            <div class="key-btn">1</div><div class="key-btn">2</div><div class="key-btn">3</div>
+            <div class="key-btn">4</div><div class="key-btn">5</div><div class="key-btn">6</div>
+            <div class="key-btn">7</div><div class="key-btn">8</div><div class="key-btn">9</div>
+            <div class="key-btn">00</div><div class="key-btn">0</div><div class="key-btn">DEL</div>
+          </div>
+
+          <button class="btn-save">[COMMIT ENTRY]</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. DETAIL / KOREKSI TRANSAKSI -->
+    <div class="device">
+      <div class="status-bar"><span>09:41</span><span>5G 98%</span></div>
+      <div class="screen-header">
+        <span style="font-size: 11px; font-weight: 800; cursor: pointer;">[ESC]</span>
+        <div class="screen-title">KOREKSI ID#42</div>
+        <span style="font-size: 11px; font-weight: 800; color: var(--expense); cursor: pointer;">[DEL]</span>
+      </div>
+
+      <div class="screen-content">
+        <div class="panel" style="font-size: 11px; background: #FFF;">
+          <div>SUMBER: <span class="badge-btn">BTN</span> | ASAL: AUTO-NOTIF</div>
+          <div>TIMESTAMP: 1793340262715 (30-10-2026 12:45)</div>
+        </div>
+
+        <div class="panel" style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="form-group">
+            <label class="form-label">NOMINAL</label>
+            <input class="form-input tabular" type="text" value="22000" style="font-weight: 800; font-size: 16px;">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">MERCHANT / TEKS</label>
+            <input class="form-input" type="text" value="GEPREK MASZEH ITS">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">KATEGORI</label>
+            <div class="chips-grid">
+              <div class="cat-chip selected">MAKANAN</div>
+              <div class="cat-chip">TRANSPORT</div>
+              <div class="cat-chip">BELANJA</div>
+              <div class="cat-chip">KOS</div>
+              <div class="cat-chip">LAINNYA</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">CATATAN PRIBADI</label>
+            <input class="form-input" type="text" placeholder="opsional">
+          </div>
+
+          <button class="btn-save" style="margin-top: 4px;">[SIMPAN PERUBAHAN]</button>
+        </div>
+
+        <div class="panel" style="font-size: 10px; background: #F8FAFC;">
+          <div style="font-weight: 800; margin-bottom: 2px;">RAW PAYLOAD:</div>
+          <div>Payment GEPREK MASZEH ITS Successful</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. LOG PARSER & UJI RULE REGEX -->
+    <div class="device">
+      <div class="status-bar"><span>09:41</span><span>5G 98%</span></div>
+      <div class="screen-header">
+        <div class="screen-title">PARSER DEBUGGER</div>
+        <span class="badge-btn">REGEX</span>
+      </div>
+
+      <div class="screen-content">
+        <div class="panel" style="display: flex; justify-content: space-between; font-size: 11px;">
+          <span>PARSED: <strong>18</strong></span>
+          <span>FAILED: <strong style="color:var(--expense)">1</strong></span>
+          <span>IGNORED: <strong>4</strong></span>
+        </div>
+
+        <div class="panel" style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="panel-header"><span>LIVE REGEX EVALUATOR</span></div>
+
+          <div class="form-group">
+            <label class="form-label">STRING IN</label>
+            <textarea class="form-input" style="height: 48px; font-size: 11px;">Payment GEPREK MASZEH ITS Successful</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">PATTERN</label>
+            <input class="form-input" type="text" value="Payment (?<merchant>.*) Successful" style="font-size: 11px;">
+          </div>
+
+          <div style="background: #ECFDF5; border: 1px solid #6EE7B7; padding: 6px; font-size: 11px;">
+            MATCH: <strong>merchant = GEPREK MASZEH ITS</strong>
+          </div>
+
+          <button class="btn-save" style="min-height: 40px; font-size: 11px;">COMMIT RULE JSON</button>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span>RING BUFFER (200 ROWS)</span></div>
+          <div class="dense-row" style="font-size: 10px;">
+            <span>[BTN] Payment GEPREK MASZEH ITS...</span>
+            <span style="color: var(--income); font-weight: 800;">PASS</span>
+          </div>
+          <div class="dense-row" style="font-size: 10px;">
+            <span>[GOPAY] Pembayaran Rp 14.000 Sukolilo</span>
+            <span style="color: var(--income); font-weight: 800;">PASS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. PENGATURAN -->
+    <div class="device">
+      <div class="status-bar"><span>09:41</span><span>5G 98%</span></div>
+      <div class="screen-header">
+        <div class="screen-title">SISTEM & DIAGNOSTIK</div>
+      </div>
+
+      <div class="screen-content">
+        <div class="panel">
+          <div class="panel-header"><span>HARDWARE OS STATUS</span></div>
+          <div class="dense-row">
+            <span>NOTIF ACCESS SERVICE</span>
+            <strong style="color: var(--income);">ENABLED</strong>
+          </div>
+          <div class="dense-row">
+            <span>BATTERY OPTIMIZATION</span>
+            <strong style="color: var(--warn);">WARNING: CHECK</strong>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header"><span>MENU LOKAL</span></div>
+          <div class="dense-row" style="cursor: pointer;">
+            <span>[01] KELOLA KATEGORI</span>
+            <span>&gt;</span>
+          </div>
+          <div class="dense-row" style="cursor: pointer;">
+            <span>[02] LOG MENTAH & REGEX</span>
+            <span>&gt;</span>
+          </div>
+          <div class="dense-row" style="cursor: pointer;">
+            <span>[03] PANDUAN OEM XIAOMI</span>
+            <span>&gt;</span>
+          </div>
+        </div>
+
+        <div class="panel" style="font-size: 11px; background: #FFF; text-align: center;">
+          <strong>ZERO-NETWORK ASSURANCE</strong><br>
+          NO INTERNET PERMISSION. DATA LOKAL DI /data/data/com.bimadji.uangku
+        </div>
+      </div>
+
+      <div class="nav-bar">
+        <a class="nav-item">REKAP</a>
+        <a class="nav-item">DAFTAR</a>
+        <a class="nav-item active">SETELAN</a>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

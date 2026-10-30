@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:uangku/data/database.dart';
@@ -25,6 +26,11 @@ final cashFlowProvider = FutureProvider<CashFlow>((ref) async {
 final feedProvider = FutureProvider<List<Transaction>>((ref) async {
   final repo = ref.watch(repositoryProvider);
   return repo.feed();
+});
+
+final categoryListProvider = FutureProvider<List<Category>>((ref) async {
+  final db = ref.watch(databaseProvider);
+  return db.select(db.categories).get();
 });
 
 // ---- UI Komponen Inti (DBD §5) ----
@@ -184,6 +190,122 @@ class TransactionTile extends StatelessWidget {
   }
 }
 
+// ---- QuickCashSheet (AFD §4, DBD §5, FR-07) ----
+
+class QuickCashSheet extends ConsumerStatefulWidget {
+  const QuickCashSheet({super.key});
+
+  @override
+  ConsumerState<QuickCashSheet> createState() => _QuickCashSheetState();
+}
+
+class _QuickCashSheetState extends ConsumerState<QuickCashSheet> {
+  String _amount = '';
+  int? _categoryId;
+  TxType _type = TxType.expense;
+  bool _saving = false;
+
+  Future<void> _save() async {
+    final amount = int.tryParse(_amount);
+    if (amount == null || amount <= 0 || _categoryId == null || _saving) return;
+    setState(() => _saving = true);
+
+    final db = ref.read(databaseProvider);
+    await db.into(db.transactions).insert(TransactionsCompanion.insert(
+          amount: amount,
+          type: _type,
+          categoryId: _categoryId!,
+          source: TxSource.CASH,
+          origin: TxOrigin.manual,
+          occurredAt: DateTime.now().millisecondsSinceEpoch,
+          // Tunai manual tidak lewat parser → hash unik per insert.
+          dedupHash: 'cash-${DateTime.now().millisecondsSinceEpoch}',
+        ));
+
+    ref.invalidate(cashFlowProvider);
+    ref.invalidate(feedProvider);
+    HapticFeedback.mediumImpact();
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = ref.watch(categoryListProvider);
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16, right: 16, top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SegmentedButton<TxType>(
+            segments: const [
+              ButtonSegment(value: TxType.expense, label: Text('Keluar')),
+              ButtonSegment(value: TxType.income, label: Text('Masuk')),
+            ],
+            selected: {_type},
+            onSelectionChanged: (s) => setState(() => _type = s.first),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _amount.isEmpty ? 'Rp 0' : 'Rp $_amount',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          // Keypad 1-9, 0, 00, backspace (DBD §5: nominal cepat).
+          for (final row in [['1','2','3'],['4','5','6'],['7','8','9'],['00','0','⌫']])
+            Row(
+              children: [
+                for (final k in row)
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => setState(() {
+                        if (k == '⌫') {
+                          if (_amount.isNotEmpty) {
+                            _amount = _amount.substring(0, _amount.length - 1);
+                          }
+                        } else if (_amount.length < 12) {
+                          _amount = (_amount + k).replaceFirst(RegExp(r'^0+(?=\d)'), '');
+                        }
+                      }),
+                      child: Text(k, style: const TextStyle(fontSize: 22)),
+                    ),
+                  ),
+              ],
+            ),
+          const SizedBox(height: 8),
+          // Grid chip kategori 1 tap (kind sesuai tipe terpilih).
+          categories.maybeWhen(
+            data: (cats) => Wrap(
+              spacing: 6, runSpacing: 6,
+              children: [
+                for (final c in cats.where((c) => c.kind.name == _type.name))
+                  ChoiceChip(
+                    label: Text(c.name),
+                    selected: _categoryId == c.id,
+                    onSelected: (_) => setState(() => _categoryId = c.id),
+                  ),
+              ],
+            ),
+            orElse: () => const SizedBox(height: 32),
+          ),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: (_amount.isEmpty || _categoryId == null || _saving) ? null : _save,
+            style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+            child: _saving
+                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Simpan', style: TextStyle(fontSize: 18)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ---- Layar Utama (AFD §1: 3 Tab) ----
 
 class MainScreen extends StatefulWidget {
@@ -196,6 +318,12 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _tab = 0;
 
+  Future<void> _openQuickCash() => showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        builder: (_) => const QuickCashSheet(),
+      );
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -205,6 +333,10 @@ class _MainScreenState extends State<MainScreen> {
       body: _tab == 0
           ? const _DashboardTab()
           : (_tab == 1 ? const _FeedTab() : const _SettingsTab()),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openQuickCash,
+        child: const Icon(Icons.add),
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),

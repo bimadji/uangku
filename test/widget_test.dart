@@ -99,4 +99,49 @@ void main() {
 
     expect(find.text('- Rp 30.000'), findsAtLeast(1));
   });
+
+  testWidgets('QuickCashSheet: input tunai end-to-end (FAB → keypad → kategori → simpan)',
+      (tester) async {
+    await pumpApp(tester);
+
+    // Buka sheet via FAB.
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    expect(find.text('Simpan'), findsOneWidget);
+
+    // Keypad: 2, 5, 0, 0, 0 → Rp 25000.
+    for (final k in ['2', '5', '0', '0', '0']) {
+      await tester.tap(find.text(k).last);
+      await tester.pump();
+    }
+    expect(find.text('Rp 25000'), findsOneWidget);
+
+    // Pilih kategori (chip Makanan & Minuman, default expense).
+    await tester.tap(find.text('Makanan & Minuman').last);
+    await tester.pump();
+
+    // Simpan.
+    await tester.tap(find.text('Simpan'));
+    await tester.pumpAndSettle();
+
+    // Sheet tertutup, data masuk: feed menampilkan transaksi tunai baru.
+    final rows = await repo.feed();
+    expect(rows, hasLength(1));
+    expect(rows.first.amount, 25000);
+    expect(rows.first.source, TxSource.CASH);
+    expect(rows.first.origin, TxOrigin.manual);
+    expect(find.byIcon(Icons.add), findsOneWidget); // kembali ke layar utama
+  });
+
+  testWidgets('QuickCashSheet: tombol Simpan disabled tanpa nominal/kategori',
+      (tester) async {
+    await pumpApp(tester);
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+
+    // Tanpa nominal & kategori → Simpan disabled (validasi AFD §4).
+    final saveBtn = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Simpan'));
+    expect(saveBtn.onPressed, isNull);
+  });
 }

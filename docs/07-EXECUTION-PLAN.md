@@ -56,6 +56,7 @@ Workflow CI (T-001): GitHub Actions dengan `subosito/flutter-action` + `setup-ja
 | T-006 | M1 | Skema DB + seed kategori idempotent | T-002, T-005 | M | kode |
 | T-007 | M1 | TransactionRepository: CRUD + agregasi | T-006 | M | kode |
 | T-008 | M1 | Dashboard sederhana + layar feed | T-003, T-007 | M | kode |
+| T-008B | M1 | **Mockup Desain UI (3 Opsi)** | T-008 | S | desain |
 | T-009 | M1 | QuickCashSheet dari FAB | T-008 | M | kode |
 | T-010 | M2 | **MANUAL**: kumpulkan sampel notifikasi asli | T-005 | S | MANUAL |
 | T-011 | M2 | NotificationListener (Kotlin) + EventChannel | T-004, T-010 | M | kode |

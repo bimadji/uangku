@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Uangku - Pratinjau Desain Mockup (3 Opsi)</title>
+  <style>
+    :root {
+      --bg: #0F172A;
+      --card-bg: #1E293B;
+      --text: #F8FAFC;
+      --text-muted: #94A3B8;
+      --accent: #38BDF8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 40px 20px; line-height: 1.6; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 40px; }
+    h1 { font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 12px; }
+    p.subtitle { color: var(--text-muted); font-size: 16px; max-width: 700px; margin: 0 auto; }
+    
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; margin-top: 32px; }
+    .option-card {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
+      padding: 24px; display: flex; flex-direction: column; justify-content: space-between;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .option-card:hover { transform: translateY(-4px); border-color: var(--accent); }
+    .option-tag { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 12px; }
+    .tag-a { background: #1E3A8A; color: #93C5FD; }
+    .tag-b { background: #78350F; color: #FDE68A; }
+    .tag-c { background: #334155; color: #E2E8F0; }
+    
+    h2 { font-size: 20px; margin-bottom: 8px; }
+    p.desc { color: var(--text-muted); font-size: 14px; margin-bottom: 16px; }
+    
+    .specs { list-style: none; font-size: 13px; color: #CBD5E1; margin-bottom: 24px; display: flex; flex-direction: column; gap: 6px; }
+    .specs li::before { content: "• "; color: var(--accent); }
+
+    .btn-view {
+      display: block; text-align: center; padding: 12px; border-radius: 10px;
+      background: var(--accent); color: #0F172A; text-decoration: none;
+      font-weight: 700; font-size: 14px; transition: opacity 0.2s;
+    }
+    .btn-view:hover { opacity: 0.9; }
+
+    .comparison-section { margin-top: 56px; background: var(--card-bg); border-radius: 16px; padding: 24px; border: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--accent); font-weight: 700; text-transform: uppercase; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Pilihan Arah Desain Mockup Uangku</h1>
+      <p class="subtitle">Tiga arah desain visual self-contained berukuran 390px (mobile viewport) berdasarkan referensi Copilot iOS, Sumeria iOS, dan prinsip DBD/PRD.</p>
+    </header>
+
+    <div class="grid">
+      <!-- Opsi A -->
+      <div class="option-card">
+        <div>
+          <span class="option-tag tag-a">Opsi A</span>
+          <h2>Clean Card Modern</h2>
+          <p class="desc">Inspirasi Copilot iOS: Kartu modular berlapis, aksen biru kobalt, keypad bulat empuk, chart donut ringkas.</p>
+          <ul class="specs">
+            <li>Karakter: Ramah, kontemporer, visual santai</li>
+            <li>Input Tunai: Keypad keypad bulat besar + chip empuk</li>
+            <li>Hierarki: Angka hero tegas di kartu terpisah</li>
+            <li>Status Listener: Banner hijau/kuning elegan di atas</li>
+          </ul>
+        </div>
+        <a class="btn-view" href="option-a/index.html">Buka 6 Layar Opsi A →</a>
+      </div>
+
+      <!-- Opsi B -->
+      <div class="option-card">
+        <div>
+          <span class="option-tag tag-b">Opsi B</span>
+          <h2>Editorial Warm Minimal</h2>
+          <p class="desc">Inspirasi Sumeria iOS: Tipografi berkarakter (serif), palet batu hangat (stone/warm white), garis pemisah halus.</p>
+          <ul class="specs">
+            <li>Karakter: Elegan, buku kas personal, tenang</li>
+            <li>Input Tunai: Keypad kotak rapat + chip persegi</li>
+            <li>Hierarki: Angka headline raksasa tanpa kartu tebal</li>
+            <li>Status Listener: Subbar status tipis terintegrasi</li>
+          </ul>
+        </div>
+        <a class="btn-view" href="option-b/index.html">Buka 6 Layar Opsi B →</a>
+      </div>
+
+      <!-- Opsi C -->
+      <div class="option-card">
+        <div>
+          <span class="option-tag tag-c">Opsi C</span>
+          <h2>Compact High-Density</h2>
+          <p class="desc">Inspirasi Terminal & Ledger: Monospace, border hitam tegas, kepadatan data tinggi, tanpa dekorasi grafis.</p>
+          <ul class="specs">
+            <li>Karakter: Fungsional maksimal, developer-first, tajam</li>
+            <li>Input Tunai: Keypad flat tegas, grid kategori padat</li>
+            <li>Hierarki: Baris-baris ledger padat muat banyak item</li>
+            <li>Status Listener: Header status hardware ringkas</li>
+          </ul>
+        </div>
+        <a class="btn-view" href="option-c/index.html">Buka 6 Layar Opsi C →</a>
+      </div>
+    </div>
+
+    <div class="comparison-section">
+      <h2 style="font-size: 18px;">Matriks Perbandingan terhadap Prinsip DBD</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Kriteria</th>
+            <th>Opsi A (Clean Card)</th>
+            <th>Opsi B (Editorial Warm)</th>
+            <th>Opsi C (Compact Density)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Input Cepat &lt; 5 Detik</strong></td>
+            <td>Sangat cepat (keypad empuk, chip rounded besar)</td>
+            <td>Cepat (keypad bersih langsung fokus angka)</td>
+            <td>Maksimal cepat (grid numerik flat ultra-responsif)</td>
+          </tr>
+          <tr>
+            <td><strong>Koreksi &le; 2 Tap</strong></td>
+            <td>Jelas di card koreksi mandiri</td>
+            <td>Intuitif via sheet koreksi tenang</td>
+            <td>Langsung via row dialog ringkas</td>
+          </tr>
+          <tr>
+            <td><strong>Status Listener Terlihat</strong></td>
+            <td>Banner kontras tinggi di atas Dashboard</td>
+            <td>Status teks minimalis di bawah header</td>
+            <td>Status label persisten di sistem panel</td>
+          </tr>
+          <tr>
+            <td><strong>Kepadatan Informasi</strong></td>
+            <td>Sedang (jarak lega, mudah dibaca satu tangan)</td>
+            <td>Sedang-Tinggi (ritme vertikal ritmis)</td>
+            <td>Sangat Tinggi (muat lebih banyak transaksi per layar)</td>
+          </tr>
+          <tr>
+            <td><strong>Aksesibilitas & Kontras</strong></td>
+            <td>Semua teks &ge; 4.5:1, target sentuh &ge; 48dp</td>
+            <td>Semua teks &ge; 4.5:1, target sentuh &ge; 48dp</td>
+            <td>Semua teks &ge; 4.5:1, target sentuh &ge; 48dp</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

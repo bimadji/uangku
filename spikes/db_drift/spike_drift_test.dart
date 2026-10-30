@@ -2,13 +2,13 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:uangku/spike_db/spike_drift_lib.dart';
+import 'package:uangku/data/database.dart';
 
 void main() {
-  late SpikeDb db;
+  late AppDatabase db;
 
   setUp(() {
-    db = SpikeDb(NativeDatabase.memory());
+    db = AppDatabase(NativeDatabase.memory());
   });
   tearDown(() => db.close());
 
@@ -41,8 +41,8 @@ void main() {
             amount: 25000,
             type: TxType.expense,
             categoryId: 1,
-            source: 'BTN',
-            origin: 'auto',
+            source: TxSource.BTN,
+            origin: TxOrigin.auto,
             occurredAt: 1730000000000,
             dedupHash: hash);
     await db.into(db.transactions).insert(await tx('abc'));
@@ -58,16 +58,16 @@ void main() {
         amount: 10000,
         type: TxType.expense,
         categoryId: cat.id,
-        source: 'GOPAY',
-        origin: 'auto',
+        source: TxSource.GOPAY,
+        origin: TxOrigin.auto,
         occurredAt: 1730000000000,
         dedupHash: 'h1'));
     await db.into(db.transactions).insert(TransactionsCompanion.insert(
         amount: 50000,
         type: TxType.income,
         categoryId: cat.id,
-        source: 'BTN',
-        origin: 'auto',
+        source: TxSource.BTN,
+        origin: TxOrigin.auto,
         occurredAt: 1730000600000,
         dedupHash: 'h2'));
     final sum = await db.customSelect(

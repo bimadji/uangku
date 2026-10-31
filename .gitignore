@@ -7,3 +7,5 @@ build/
 .vscode/
 android/.gradle/
 ios/Pods/
+android/.kotlin/
+android/.gradle/

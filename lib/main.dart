@@ -15,6 +15,7 @@ import 'package:uangku/services/notif_ingest_service.dart';
 import 'package:uangku/services/parser_engine.dart';
 import 'package:uangku/services/platform_bridge.dart';
 import 'package:uangku/services/widget_bridge.dart';
+import 'package:uangku/ui/app_theme.dart';
 import 'package:uangku/ui/dashboard_screen.dart';
 import 'package:uangku/ui/onboarding_screen.dart';
 
@@ -115,10 +116,7 @@ class _UangkuAppState extends ConsumerState<UangkuApp> {
     return MaterialApp(
       navigatorKey: _navigatorKey,
       title: 'Uangku',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.teal),
-        useMaterial3: true,
-      ),
+      theme: buildAppTheme(),
       home: const _AppEntry(),
     );
   }

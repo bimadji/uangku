@@ -464,3 +464,66 @@ Tidak ada keputusan diam-diam: jika spike melebihi batas waktu, ambil pilihan ya
 - Estimasi ukuran S/M berbasis pengalaman umum Flutter (repo belum ada kode) — dikoreksi saat eksekusi bila meleset.
 - Scope MVP = FR-01..FR-12 saja. Fase 2 (PRD §7) tidak masuk tugas mana pun.
 - Flutter SDK sudah terpasang di mesin lokal (konfirmasi user, 2026-10-29): T-001 bisa menjalankan `flutter create` lokal dan smoke `flutter analyze`/`test` sebelum push, selain CI GitHub Actions.
+
+---
+
+## 10. Task Penyelarasan UI ke Mockup Option A (T-029 s.d. T-034)
+
+> Sumber acuan visual: `docs/mockups/option-a/index.html` (mockup terpilih, Clean Card Modern) + screenshot aplikasi asli di `docs/realTest/`.
+> Batasan keras: **hanya lapisan UI**. Tidak boleh mengubah parser, dedup, kategorisasi, skema DB, atau kontrak Kotlin↔Flutter. Kebutuhan data baru yang tidak tersedia → dicatat di backlog, bukan dikerjakan diam-diam.
+> Keputusan pengguna (2026-10-31): ikon transaksi tetap panah ↑/↓ (bukan emoji mockup); kartu Arus Kas mengikuti mockup (hero amount + 2 nilai bawah) dengan label "Arus Kas"; cakupan 6 task.
+> Font: mockup memakai font sistem (`-apple-system`/`Segoe UI`/`Roboto`) — **tidak ada font web yang perlu dibundel**, sehingga batasan tanpa unduhan runtime (NFR-01) tetap terpenuhi.
+
+#### T-029 — Tema terpusat + token desain (M6.1)
+- **Branch**: `feat/t-029-ui-theme`
+- **Dep**: T-028
+- **Cover**: `docs/04-DBD.md` §3, §4; mockup option-a token CSS.
+- **Perubahan**: satu file `lib/ui/app_theme.dart` berisi token warna (bg `#F4F6F9`, surface `#FFFFFF`, surface-subtle `#F8FAFC`, fg `#0F172A`, muted `#64748B`, border `#E2E8F0`, accent `#2563EB`, income `#16A34A`, expense `#DC2626`, warn `#D97706` + warna badge sumber + chip mode), skala tipografi (screen title 18/700, sub-judul 13/700, body 13/600, caption 10–11/600, hero nominal 26/800), radius (8/16/24), spacing, dan `ThemeData` Material 3 yang memakai token tersebut (seed color `teal` diganti `accent`).
+- **Eksklusi**: tanpa perubahan layout layar; tanpa data dummy; tanpa aset/font baru.
+- **Kriteria sukses**: widget test memeriksa `Theme.of(context).colorScheme.primary` = `#2563EB` dan token warna tersedia sebagai konstanta; `flutter analyze` bersih; tidak ada literal warna hex baru di luar file token (diversi disetujui).
+- **Ukuran**: S.
+
+#### T-030 — Dashboard sesuai mockup (M6.2)
+- **Branch**: `feat/t-030-ui-dashboard`
+- **Dep**: T-029
+- **Cover**: FR-08; DBD §5, §6; mockup dashboard.
+- **Perubahan**: judul layar "Ringkasan Uangku" + greeting "Halo, {nama}" di header; badge "OFFLINE 100%" di kanan header; segmented periode **dipisah dari** kartu Arus Kas (menjadi baris penuh di atas kartu, bukan menimpa); kartu Arus Kas dengan hero amount pengeluaran + baris bawah "Pemasukan" dan "Net Arus Kas"; section feed dibungkus kartu putih dengan judul "Transaksi Terbaru" + tautan "Lihat Semua"; baris transaksi memakai `tx-item` (border bawah `#F1F5F9`, min-height 52, avatar 40px) + label kategori di kanan bawah nominal; FAB biru accent 56px radius 28 (bukan teal Material).
+- **Eksklusi**: tanpa perubahan data/aggregasi (agregasi net sudah tersedia di `CashFlow`); tanpa widget chart baru (donut dipertahankan, hanya ukurannya diseragamkan ke 84px + % pada legend); greeting "Halo, {nama}" memakai nama placeholder "Bima" (tidak ada sumber nama pengguna di DB → backlog).
+- **Kriteria sukses**: widget test memeriksa urutan elemen (status banner → segmented → kartu Arus Kas → chart → kartu feed), hero amount tampil, dan "Lihat Semua" ada; test lama tetap hijau.
+- **Ukuran**: M.
+
+#### T-031 — Transaksi (feed) sesuai mockup (M6.3)
+- **Branch**: `feat/t-031-ui-feed`
+- **Dep**: T-029, T-030
+- **Cover**: FR-09; DBD §6; mockup feed.
+- **Perubahan**: judul "Riwayat Transaksi"; baris filter chip direstyle (tinggi 36px, pill, memuat badge sumber di dalam chip: `BTN` / `GoPay` / `Tunai` + "Semua" dengan centang); grouping tanggal — transaksi dikelompokkan per tanggal dengan header "Hari Ini · 30 Okt 2026" / "Kemarin" / tanggal lain, tiap kelompok dibungkus kartu putih; baris transaksi memakai komponen `tx-item` yang sama dengan Dashboard (avatar 40px, border bawah, label kategori di kanan).
+- **Eksklusi**: tanpa mengubah query feed atau filter di memori (backlog T-022 tetap); tanpa pagination.
+- **Kriteria sukses**: widget test memeriksa header tanggal muncul, filter chip memuat badge sumber, dan baris transaksi menampilkan kategori.
+- **Ukuran**: M.
+
+#### T-032 — Pengaturan sesuai mockup (M6.4)
+- **Branch**: `feat/t-032-ui-settings`
+- **Dep**: T-029
+- **Cover**: FR-01 (status listener); DBD §6; mockup Pengaturan.
+- **Perubahan**: card "Status listener hardware" (radius 16, border `#E2E8F0`, shadow tipis, tanpa divider di antara item) berisi baris Notification Access & Whitelist Baterai dengan trailing badge pill ("AKTIF" hijau / "CEK SETELAN" amber); menu "Log Parser & Uji Rule" dipindah ke dalam card menu yang sama; blok privasi jadi card terpusat dengan ikon kunci + judul "100% Offline & Privat" + penjelasan; label app "Uangku" (bukan "uangku").
+- **Eksklusi**: tanpa menambah menu Pengaturan baru; tanpa mengubah alur onboarding.
+- **Kriteria sukses**: widget test memeriksa badge status, keberadaan menu Log Parser, dan blok privasi.
+- **Ukuran**: S.
+
+#### T-033 — QuickCashSheet sesuai mockup (M6.5)
+- **Branch**: `feat/t-033-ui-quicksheet`
+- **Dep**: T-029
+- **Cover**: FR-07; NFR-05; DBD §5; mockup sheet.
+- **Perubahan**: toggle Keluar/Masuk memakai segmented accent (biru, selected putih); **urutan dibalik** — chip kategori lebih dulu, keypad setelahnya (sesuai mockup); keypad tombol 48dp dengan bg `#F8FAFC`, border `#E2E8F0`, radius 12, angka `#0F172A` (bukan teal); chip kategori jadi pill radius 24, selected = biru filled + teks putih; tombol simpan biru accent radius 14 dengan label "Simpan Transaksi (Tunai)" / "Simpan Transaksi (Masuk)" sesuai tipe; display nominal memakai tabular figures.
+- **Eksklusi**: tanpa mengubah logika simpan (`_save`), sumber `CASH`, atau validasi tombol.
+- **Kriteria sukses**: widget test memeriksa urutan chip sebelum keypad, tombol simpan berlabel sesuai tipe, dan nominal tampil tabular.
+- **Ukuran**: M.
+
+#### T-034 — Detail/Koreksi + Log Parser sesuai mockup (M6.6)
+- **Branch**: `feat/t-034-ui-detail-logparser`
+- **Dep**: T-029, T-030
+- **Cover**: FR-06, FR-10; DBD §6; mockup detail & log parser.
+- **Perubahan**: layar Detail/Koreksi — app bar dengan "← Batal" & "Hapus", ringkasan sumber dana + waktu, input nominal 18px bold tabular, label form 12/600 muted, chip kategori pill, tombol "Simpan Perubahan" biru accent; Log Parser — stat card Parsed/Failed/Ignored (hijau/merah/abu), panel editor regex dengan hasil live, daftar log dengan badge status pill.
+- **Eksklusi**: **tanpa panel "Teks notifikasi asli"** di Detail/Koreksi — data raw text ada di `parser_logs` tetapi belum ada relasi transaksi↔log (butuh kolom `rule_id`/FK baru = perubahan skema, di luar scope UI) → dicatat di backlog.
+- **Kriteria sukses**: widget test memeriksa stat card log, badge status, dan label tombol Detail.
+- **Ukuran**: M.

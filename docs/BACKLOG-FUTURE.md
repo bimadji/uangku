@@ -179,3 +179,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Pengguna melihat header tanpa jalan keluar untuk mengekspor data (sesuai scope MVP). Ketiadaan jam membuat transaksi pada hari yang sama tidak terlihat urutan waktunya di kartu.
 - Associated: `lib/ui/dashboard_screen.dart` (`_FeedTab`, `_formatDateGroup`), FR-09, `docs/04-DBD.md` §6, `docs/mockups/option-a/index.html`.
 - Saran: Fitur Export masuk Fase 2; jam transaksi ditambahkan ke subtitle baris saat T-034.
+
+## T-032: Pengaturan sesuai mockup option-a (M6.4)
+- Dilewati: Menu "Kelola Kategori Default" dan "Panduan Whitelist Baterai (Xiaomi)" dari mockup **tidak ditambahkan** — keduanya tidak punya layar tujuan di aplikasi (kelola kategori butuh CRUD baru = di luar scope UI). Baris "Whitelist Baterai" pada card status **tidak bisa diketuk** untuk membuka setelan baterai OEM (mockup juga tidak menyediakannya; hanya teks). Indikator status listener tidak auto-refresh saat pengguna kembali dari Setelan Android — perlu menekan baris Notification Access lagi.
+- Risiko: Pengguna melihat menu yang belum bisa membuka apa pun bila kedua menu itu ditambahkan; belum ditambahkan, jadi tidak menyesatkan. Status listener bisa tampak basi setelah pengguna mengubah izin di luar aplikasi.
+- Associated: `lib/ui/dashboard_screen.dart` (`_SettingsTab`, `_statusPill`), FR-01, `docs/04-DBD.md` §6, `docs/mockups/option-a/index.html`.
+- Saran: Auto-refresh status saat `AppLifecycleState.resumed` masuk T-034 atau polish; layar Kelola Kategori masuk fase 2.

@@ -101,7 +101,7 @@ void main() {
       await tester.tap(find.text('Pengaturan'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Status Otomatisasi'), findsOneWidget);
+      expect(find.text('Status listener hardware'), findsOneWidget); // mockup option-a
       expect(find.text('Notification Access'), findsOneWidget);
       expect(find.text('Whitelist Baterai (OEM)'), findsOneWidget);
       expect(find.text('AKTIF'), findsNWidgets(2));

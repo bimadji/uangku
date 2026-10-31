@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uangku/data/database.dart';
 import 'package:uangku/services/parser_engine.dart';
 import 'package:uangku/ui/dashboard_screen.dart';
+import 'package:uangku/ui/states.dart';
 
 // ---- Providers ----
 
@@ -64,18 +65,16 @@ class ParserLogScreen extends ConsumerWidget {
       ),
       body: logs.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Gagal: $e')),
+        error: (e, _) => ErrorState(
+          message: 'Gagal memuat log: $e',
+          onRetry: () => ref.invalidate(parserLogsProvider),
+        ),
         data: (items) {
           if (items.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Belum ada notifikasi yang ditangkap listener.\n'
-                  'Pastikan Notification Access sudah diizinkan.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
+            return const EmptyState(
+              icon: Icons.notifications_off_outlined,
+              message:
+                  'Belum ada notifikasi yang ditangkap listener.\nPastikan Notification Access sudah diizinkan.',
             );
           }
           final parsed = items.where((l) => l.status == ParserLogStatus.parsed).length;

@@ -41,7 +41,7 @@ void main() {
     expect(find.text('Arus Kas'), findsOneWidget);
     expect(find.text('Pemasukan'), findsOneWidget);
     expect(find.text('Pengeluaran'), findsOneWidget);
-    expect(find.text('Belum ada transaksi.'), findsOneWidget);
+    expect(find.text('Belum ada transaksi di periode ini.\nTap + untuk catat pengeluaran tunai.'), findsOneWidget);
   });
 
   testWidgets('Dashboard menampilkan data nyata: badge sumber + mode chip',

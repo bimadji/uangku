@@ -109,21 +109,30 @@ void main() {
     // Buka sheet via FAB.
     await tester.tap(find.byIcon(Icons.add));
     await tester.pumpAndSettle();
-    expect(find.text('Simpan'), findsOneWidget);
+    // Label tombol mockup bergantung tipe transaksi (default Keluar)
+    expect(find.text('Simpan Transaksi (Tunai)'), findsOneWidget);
 
     // Keypad: 2, 5, 0, 0, 0 → Rp 25000.
+    // Mockup menaruh chip kategori sebelum keypad, jadi keypad ada di bawah:
+    // perlu scroll di viewport test yang kecil.
     for (final k in ['2', '5', '0', '0', '0']) {
+      await tester.ensureVisible(find.text(k).last);
+      await tester.pumpAndSettle();
       await tester.tap(find.text(k).last);
       await tester.pump();
     }
     expect(find.text('Rp 25000'), findsOneWidget);
 
     // Pilih kategori (chip Makanan & Minuman, default expense).
+    await tester.ensureVisible(find.text('Makanan & Minuman').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Makanan & Minuman').last);
     await tester.pump();
 
     // Simpan.
-    await tester.tap(find.text('Simpan'));
+    await tester.ensureVisible(find.text('Simpan Transaksi (Tunai)'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Simpan Transaksi (Tunai)'));
     await tester.pumpAndSettle();
 
     // Sheet tertutup, data masuk: feed menampilkan transaksi tunai baru.
@@ -143,7 +152,7 @@ void main() {
 
     // Tanpa nominal & kategori → Simpan disabled (validasi AFD §4).
     final saveBtn = tester.widget<FilledButton>(
-        find.widgetWithText(FilledButton, 'Simpan'));
+        find.widgetWithText(FilledButton, 'Simpan Transaksi (Tunai)'));
     expect(saveBtn.onPressed, isNull);
   });
 

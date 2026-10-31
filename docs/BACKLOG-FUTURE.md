@@ -185,3 +185,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Pengguna melihat menu yang belum bisa membuka apa pun bila kedua menu itu ditambahkan; belum ditambahkan, jadi tidak menyesatkan. Status listener bisa tampak basi setelah pengguna mengubah izin di luar aplikasi.
 - Associated: `lib/ui/dashboard_screen.dart` (`_SettingsTab`, `_statusPill`), FR-01, `docs/04-DBD.md` §6, `docs/mockups/option-a/index.html`.
 - Saran: Auto-refresh status saat `AppLifecycleState.resumed` masuk T-034 atau polish; layar Kelola Kategori masuk fase 2.
+
+## T-033: QuickCashSheet sesuai mockup option-a (M6.5)
+- Dilewati: Sheet **tidak menampilkan tanggal transaksi** (mockup juga tidak; selalu "sekarang" sesuai AFD §4). Tombol backspace memakai ikon `Icons.backspace_outlined` (mockup memakai glyph teks `⌫`). Tidak ada tombol tutup (X) atau drag handle eksplisit — ditutup dengan swipe/tap di luar sheet. Ganti tipe Keluar↔Masuk **mereset pilihan kategori** (perubahan perilaku, bukan mockup; dilakukan karena kategori income/expense berbeda). Isi sheet kini bisa di-scroll; pada layar pendek keypad butuh satu geseran sebelum terlihat utuh.
+- Risiko: Pada ponsel layar kecil, keypad tidak langsung terlihat tanpa scroll — sedikit melanggar target "input < 5 detik" (FR-07/NFR-05) karena butuh satu gesture tambahan.
+- Associated: `lib/ui/dashboard_screen.dart` (`_QuickCashSheetState`, `_typeToggle`, `_keypad`), FR-07, NFR-05, `docs/04-DBD.md` §5.
+- Saran: Perkecil tinggi header/chip atau pakai keypad lebih ringkas agar semua muat tanpa scroll; verifikasi waktu input di HP saat checklist §7.2.

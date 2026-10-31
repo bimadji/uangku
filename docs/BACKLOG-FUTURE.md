@@ -136,3 +136,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Interaktivitas antar-komponen dashboard belum 100% seperti konsep interaktif (hanya visual chart statis). Pengeluaran kategori ke-5 dan seterusnya hanya tampak sebagai irisan warna tanpa label teks di card.
 - Terkait: `lib/ui/dashboard_screen.dart` (`CategoryDonutChart`), FR-08, DBD §5.
 - Saran: Filter feed via tap chart ditambahkan di T-022 saat filter chip feed dibangun; ekspansi legend kategori masuk T-024.
+
+## T-022: Filter sumber feed + badge konsisten (M4.2)
+- Dilewati: Filter memakai `ChoiceChip` biasa (bukan `SourceBadge` ber-outline seperti di mockup Opsi A). Filter berjalan **di memori** setelah `repo.feed()` mengambil 100 baris pertama — bukan query SQL `WHERE source = ?`, sehingga transaksi ke-101 dan seterusnya tidak akan muncul walau sumbernya cocok. Filter hilang saat app ditutup (state tidak dipersistenkan). Tidak ada indikator jumlah hasil per filter atau kombinasi filter dengan tanggal.
+- Risiko: Dengan lebih dari 100 transaksi, filter "BTN" bisa tampak kosong padahal ada transaksi BTN yang lebih lama. Query tetap mengambil semua baris lalu membuang sebagian di Dart — pemborosan saat data besar.
+- Terkait: `lib/ui/dashboard_screen.dart` (`feedSourceFilterProvider`, `filteredFeedProvider`, `_FeedTab`), FR-09, `docs/04-DBD.md` §6.
+- Saran: Pindahkan filter ke `TransactionRepository.feed(source:)` sebagai klausa SQL saat cursor pagination ditambahkan (fase 2 / T-024).

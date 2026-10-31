@@ -79,7 +79,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('+ Rp 10.000'), findsOneWidget);
-    expect(find.text('BTN'), findsOneWidget);
+    expect(find.text('BTN'), findsWidgets); // badge + chip filter (T-022)
     expect(find.text('manual'), findsOneWidget);
   });
 

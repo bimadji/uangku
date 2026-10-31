@@ -1282,90 +1282,155 @@ class _FeedTab extends ConsumerWidget {
 class _SettingsTab extends ConsumerWidget {
   const _SettingsTab();
 
+  Widget _statusPill({required bool active, required String activeText, required String inactiveText, bool isWarn = false}) {
+    final bg = active
+        ? AppColors.incomeBg
+        : (isWarn ? AppColors.warnBg : AppColors.expenseBg);
+    final border = active
+        ? AppColors.incomeBorder
+        : (isWarn ? AppColors.warnBorder : AppColors.expenseBorder);
+    final text = active
+        ? AppColors.incomeText
+        : (isWarn ? AppColors.warnText : AppColors.expenseText);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: border),
+      ),
+      child: Text(
+        active ? activeText : inactiveText,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: text),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final listener = ref.watch(listenerStatusProvider);
     final battery = ref.watch(batteryStatusProvider);
 
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(
+          AppSpacing.screen, 8, AppSpacing.screen, 84),
       children: [
-        const Text('Status Otomatisasi',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
+        // Card Status listener hardware (mockup option-a)
         Card(
-          margin: EdgeInsets.zero,
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.card),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Status listener hardware', style: AppText.sectionTitle),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () async {
+                    await PlatformBridge.openNotificationAccessSettings();
+                    ref.invalidate(listenerStatusProvider);
+                  },
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: const [
+                            Text('Notification Access', style: AppText.body),
+                            SizedBox(height: 2),
+                            Text('Menangkap notifikasi BTN & GoPay',
+                                style: AppText.caption),
+                          ],
+                        ),
+                      ),
+                      listener.when(
+                        loading: () => const SizedBox.shrink(),
+                        error: (e, s) => _statusPill(
+                            active: false, activeText: 'AKTIF', inactiveText: 'MATI'),
+                        data: (enabled) => _statusPill(
+                          active: enabled,
+                          activeText: 'AKTIF',
+                          inactiveText: 'MATI',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(height: 1, color: AppColors.borderSoft),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text('Whitelist Baterai (OEM)', style: AppText.body),
+                          SizedBox(height: 2),
+                          Text('Mencegah OS mematikan listener',
+                              style: AppText.caption),
+                        ],
+                      ),
+                    ),
+                    battery.when(
+                      loading: () => const SizedBox.shrink(),
+                      error: (e, s) => _statusPill(
+                          active: false, activeText: 'AKTIF', inactiveText: 'CEK SETELAN', isWarn: true),
+                      data: (ignored) => _statusPill(
+                        active: ignored,
+                        activeText: 'AKTIF',
+                        inactiveText: 'CEK SETELAN',
+                        isWarn: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.gap),
+
+        // Menu Card (mockup option-a)
+        Card(
           child: Column(
             children: [
               ListTile(
-                title: const Text('Notification Access',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                subtitle: const Text('Menangkap notifikasi BTN & GoPay',
-                    style: TextStyle(fontSize: 12)),
-                trailing: listener.when(
-                  loading: () => const SizedBox.shrink(),
-                  error: (e, _) => const SizedBox.shrink(),
-                  data: (enabled) => Text(
-                    enabled ? 'AKTIF' : 'MATI',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: enabled
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFDC2626),
-                    ),
-                  ),
-                ),
-                onTap: () async {
-                  await PlatformBridge.openNotificationAccessSettings();
-                  ref.invalidate(listenerStatusProvider);
-                },
-              ),
-              const Divider(height: 1),
-              ListTile(
-                title: const Text('Whitelist Baterai (OEM)',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                subtitle: const Text('Mencegah OS mematikan listener',
-                    style: TextStyle(fontSize: 12)),
-                trailing: battery.when(
-                  loading: () => const SizedBox.shrink(),
-                  error: (e, _) => const SizedBox.shrink(),
-                  data: (ignored) => Text(
-                    ignored ? 'AKTIF' : 'CEK SETELAN',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: ignored
-                          ? const Color(0xFF16A34A)
-                          : const Color(0xFFD97706),
-                    ),
-                  ),
+                title: const Text('Log Notifikasi Mentah & Regex', style: AppText.body),
+                trailing: const Icon(Icons.chevron_right, size: 20, color: AppColors.muted),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ParserLogScreen()),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: AppSpacing.gap),
+
+        // Privacy Assurance Card (mockup option-a)
         Card(
-          margin: EdgeInsets.zero,
-          child: ListTile(
-            leading: const Icon(Icons.bug_report_outlined),
-            title: const Text('Log Parser & Uji Rule',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            subtitle: const Text('Riwayat notifikasi mentah + editor regex',
-                style: TextStyle(fontSize: 12)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ParserLogScreen()),
+          color: AppColors.surfaceSubtle,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.card, vertical: 20),
+            child: Column(
+              children: const [
+                Icon(Icons.lock_outline, size: 28, color: AppColors.accent),
+                SizedBox(height: 8),
+                Text('100% Offline & Privat', style: AppText.sectionTitle),
+                SizedBox(height: 6),
+                Text(
+                  'Uangku tidak meminta izin INTERNET. Seluruh transaksi, saldo, dan log notifikasi hanya tersimpan di memori ponselmu.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.muted,
+                    height: 1.5,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
-        const SizedBox(height: 24),
-        const Text('Uangku v1.0.0 (MVP)',
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        const Text('Penyimpanan 100% lokal. Tanpa server, tanpa login (FR-12).',
-            style: TextStyle(color: Colors.grey)),
       ],
     );
   }

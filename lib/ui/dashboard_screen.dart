@@ -868,91 +868,228 @@ class _QuickCashSheetState extends ConsumerState<QuickCashSheet> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Segmented Keluar/Masuk bergaya mockup: track abu, segmen aktif biru accent.
+  Widget _typeToggle() {
+    Widget seg(String label, TxType value) {
+      final active = _type == value;
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => setState(() {
+            _type = value;
+            _categoryId = null; // kategori berbeda per jenis transaksi
+          }),
+          child: Semantics(
+            button: true,
+            excludeSemantics: true,
+            selected: active,
+            label: label,
+            child: Container(
+              height: 48,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: active ? AppColors.accent : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: active ? Colors.white : AppColors.muted,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.border,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(children: [seg('Keluar', TxType.expense), seg('Masuk', TxType.income)]),
+    );
+  }
+
+  Widget _keypad() {
+    Widget key(String k) => Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(3),
+            child: Semantics(
+              button: true,
+              excludeSemantics: true,
+              label: k == '⌫' ? 'Hapus digit terakhir' : 'Angka $k',
+              child: GestureDetector(
+                onTap: () => setState(() {
+                  if (k == '⌫') {
+                    if (_amount.isNotEmpty) {
+                      _amount = _amount.substring(0, _amount.length - 1);
+                    }
+                  } else if (_amount.length < 12) {
+                    _amount = (_amount + k).replaceFirst(RegExp(r'^0+(?=\d)'), '');
+                  }
+                }),
+                child: Container(
+                  // DBD §9: target sentuh minimal 48×48dp
+                  height: 48,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceSubtle,
+                    borderRadius: BorderRadius.circular(AppRadius.key),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: k == '⌫'
+                      ? const Icon(Icons.backspace_outlined,
+                          size: 18, color: AppColors.fg)
+                      : Text(
+                          k,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.fg,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+    return Column(
+      children: [
+        for (final row in [
+          ['1', '2', '3'],
+          ['4', '5', '6'],
+          ['7', '8', '9'],
+          ['00', '0', '⌫'],
+        ])
+          Row(children: [for (final k in row) key(k)]),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final categories = ref.watch(categoryListProvider);
     return Padding(
       padding: EdgeInsets.only(
-        left: 16, right: 16, top: 16,
+        left: AppSpacing.screen,
+        right: AppSpacing.screen,
+        top: 20,
         bottom: MediaQuery.of(context).viewInsets.bottom + 24,
       ),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SegmentedButton<TxType>(
-            segments: const [
-              ButtonSegment(value: TxType.expense, label: Text('Keluar')),
-              ButtonSegment(value: TxType.income, label: Text('Masuk')),
+          // Header sheet (mockup)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _type == TxType.expense ? 'Catat Tunai Cepat' : 'Catat Pemasukan',
+                style: AppText.sectionTitle,
+              ),
+              const Text('< 5 Detik', style: AppText.caption),
             ],
-            selected: {_type},
-            onSelectionChanged: (s) => setState(() => _type = s.first),
           ),
           const SizedBox(height: 16),
-          Semantics(
-            label: 'Nominal saat ini ${_amount.isEmpty ? '0' : _amount} rupiah',
-            liveRegion: true,
-            child: TabularNumber(
-              text: _amount.isEmpty ? 'Rp 0' : 'Rp $_amount',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+          _typeToggle(),
+          const SizedBox(height: 16),
+          // Display nominal (mockup: area surface-subtle radius 16)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceSubtle,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Column(
+              children: [
+                const Text('NOMINAL', style: AppText.badge),
+                const SizedBox(height: 2),
+                Semantics(
+                  label:
+                      'Nominal saat ini ${_amount.isEmpty ? '0' : _amount} rupiah',
+                  liveRegion: true,
+                  child: TabularNumber(
+                    text: _amount.isEmpty ? 'Rp 0' : 'Rp $_amount',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 32, fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          // Keypad 1-9, 0, 00, backspace (DBD §5: nominal cepat).
-          for (final row in [['1','2','3'],['4','5','6'],['7','8','9'],['00','0','⌫']])
-            Row(
+          const SizedBox(height: 16),
+          // Chip kategori dulu (mockup), lalu keypad.
+          const Align(
+            alignment: Alignment.centerLeft,
+            child: Text('PILIH KATEGORI (1 TAP)', style: AppText.badge),
+          ),
+          const SizedBox(height: 8),
+          categories.maybeWhen(
+            data: (cats) => Wrap(
+              spacing: 6,
+              runSpacing: 6,
               children: [
-                for (final k in row)
-                  Expanded(
-                    child: Semantics(
-                      button: true,
-                      label: k == '⌫' ? 'Hapus digit terakhir' : 'Angka $k',
-                      child: TextButton(
-                        // DBD §9: target sentuh minimal 48×48dp
-                        style: TextButton.styleFrom(
-                          minimumSize: const Size(48, 48),
+                for (final c in cats.where((c) => c.kind.name == _type.name))
+                  GestureDetector(
+                    onTap: () => setState(() => _categoryId = c.id),
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 48),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: _categoryId == c.id
+                            ? AppColors.accent
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(AppRadius.pill),
+                        border: Border.all(
+                          color: _categoryId == c.id
+                              ? AppColors.accent
+                              : AppColors.border,
                         ),
-                        onPressed: () => setState(() {
-                          if (k == '⌫') {
-                            if (_amount.isNotEmpty) {
-                              _amount = _amount.substring(0, _amount.length - 1);
-                            }
-                          } else if (_amount.length < 12) {
-                            _amount = (_amount + k).replaceFirst(RegExp(r'^0+(?=\d)'), '');
-                          }
-                        }),
-                        child: Text(k, style: const TextStyle(fontSize: 22)),
+                      ),
+                      child: Text(
+                        c.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _categoryId == c.id
+                              ? Colors.white
+                              : AppColors.fg,
+                        ),
                       ),
                     ),
                   ),
               ],
             ),
-          const SizedBox(height: 8),
-          // Grid chip kategori 1 tap (kind sesuai tipe terpilih).
-          categories.maybeWhen(
-            data: (cats) => Wrap(
-              spacing: 6, runSpacing: 6,
-              children: [
-                for (final c in cats.where((c) => c.kind.name == _type.name))
-                  ChoiceChip(
-                    label: Text(c.name),
-                    selected: _categoryId == c.id,
-                    onSelected: (_) => setState(() => _categoryId = c.id),
-                  ),
-              ],
-            ),
-            orElse: () => const SizedBox(height: 32),
+            orElse: () => const SizedBox(height: 48),
           ),
           const SizedBox(height: 16),
+          _keypad(),
+          const SizedBox(height: 16),
           FilledButton(
-            onPressed: (_amount.isEmpty || _categoryId == null || _saving) ? null : _save,
-            style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
+            onPressed:
+                (_amount.isEmpty || _categoryId == null || _saving) ? null : _save,
             child: _saving
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Simpan', style: TextStyle(fontSize: 18)),
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2))
+                : Text(
+                    _type == TxType.expense
+                        ? 'Simpan Transaksi (Tunai)'
+                        : 'Simpan Transaksi (Masuk)',
+                  ),
           ),
         ],
+      ),
       ),
     );
   }

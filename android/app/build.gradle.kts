@@ -33,9 +33,13 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // MVP dipakai sendiri (A-05), belum dipublikasikan ke Play Store.
+            // Signing key debug dipakai sementara; ganti dengan keystore sendiri
+            // sebelum distribusi ke orang lain.
             signingConfig = signingConfigs.getByName("debug")
+            // ProGuard/R8: pertahankan kelas plugin notifikasi & widget
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }

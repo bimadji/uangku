@@ -8,6 +8,7 @@ import 'package:uangku/data/database.dart';
 import 'package:uangku/data/transaction_repository.dart';
 import 'package:uangku/services/platform_bridge.dart';
 import 'package:uangku/ui/parser_log_screen.dart';
+import 'package:uangku/ui/states.dart';
 
 // ---- Riverpod Providers ----
 
@@ -50,6 +51,12 @@ final listenerStatusProvider = FutureProvider<bool>((ref) async {
 final batteryStatusProvider = FutureProvider<bool>((ref) async {
   return PlatformBridge.isBatteryOptimizationIgnored();
 });
+
+/// Format nominal rupiah dengan pemisah ribuan lokal (DBD §4).
+String formatRp(int amount) => 'Rp ${amount.toString().replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    )}';
 
 // ---- UI Komponen Inti (DBD §5) ----
 
@@ -134,21 +141,26 @@ class StatusBanner extends ConsumerWidget {
                       fontSize: 12, fontWeight: FontWeight.w500, color: fg),
                 ),
               ),
-              TextButton(
-                onPressed: () {
-                  if (!listenerEnabled) {
-                    PlatformBridge.openNotificationAccessSettings();
-                  }
-                  ref.invalidate(listenerStatusProvider);
-                  ref.invalidate(batteryStatusProvider);
-                },
-                style: TextButton.styleFrom(
-                  minimumSize: const Size(48, 32),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                ),
-                child: Text(
-                  'Perbaiki',
-                  style: TextStyle(fontSize: 12, color: fg),
+              Semantics(
+                button: true,
+                label: 'Perbaiki status izin listener',
+                child: TextButton(
+                  onPressed: () {
+                    if (!listenerEnabled) {
+                      PlatformBridge.openNotificationAccessSettings();
+                    }
+                    ref.invalidate(listenerStatusProvider);
+                    ref.invalidate(batteryStatusProvider);
+                  },
+                  style: TextButton.styleFrom(
+                    // DBD §9: target sentuh minimal 48×48dp
+                    minimumSize: const Size(48, 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: Text(
+                    'Perbaiki',
+                    style: TextStyle(fontSize: 12, color: fg),
+                  ),
                 ),
               ),
             ],
@@ -198,10 +210,6 @@ class ModeChip extends StatelessWidget {
 class CashFlowCard extends ConsumerWidget {
   const CashFlowCard({super.key});
 
-  String _formatRp(int amount) => 'Rp ${amount.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]}.',
-      )}';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -242,18 +250,22 @@ class CashFlowCard extends ConsumerWidget {
                     children: [
                       const Text('Pemasukan', style: TextStyle(color: Colors.grey)),
                       const SizedBox(height: 4),
-                      Text('+ ${_formatRp(data.income)}',
-                          style: const TextStyle(
-                              color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold)),
+                      TabularNumber(
+                        text: '+ ${formatRp(data.income)}',
+                        style: const TextStyle(
+                            color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                   Column(
                     children: [
                       const Text('Pengeluaran', style: TextStyle(color: Colors.grey)),
                       const SizedBox(height: 4),
-                      Text('- ${_formatRp(data.expense)}',
-                          style: const TextStyle(
-                              color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold)),
+                      TabularNumber(
+                        text: '- ${formatRp(data.expense)}',
+                        style: const TextStyle(
+                            color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
                     ],
                   ),
                 ],
@@ -280,10 +292,6 @@ class CategoryDonutChart extends ConsumerWidget {
     Color(0xFF64748B), // Slate / Lainnya
   ];
 
-  String _formatRp(int amount) => 'Rp ${amount.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]}.',
-      )}';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -372,7 +380,7 @@ class CategoryDonutChart extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  _formatRp(items[i].total),
+                                  formatRp(items[i].total),
                                   style: TextStyle(
                                       fontSize: 10,
                                       color: Colors.grey.shade600),
@@ -400,10 +408,6 @@ class TransactionTile extends StatelessWidget {
   const TransactionTile({super.key, required this.tx});
   final Transaction tx;
 
-  String _formatRp(int amount) => 'Rp ${amount.toString().replaceAllMapped(
-        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-        (m) => '${m[1]}.',
-      )}';
 
   @override
   Widget build(BuildContext context) {
@@ -436,8 +440,8 @@ class TransactionTile extends StatelessWidget {
           ],
         ],
       ),
-      trailing: Text(
-        '${isExpense ? '-' : '+'} ${_formatRp(tx.amount)}',
+      trailing: TabularNumber(
+        text: '${isExpense ? '-' : '+'} ${formatRp(tx.amount)}',
         style: TextStyle(
           fontWeight: FontWeight.bold,
           color: isExpense ? Colors.red : Colors.green,
@@ -700,10 +704,14 @@ class _QuickCashSheetState extends ConsumerState<QuickCashSheet> {
             onSelectionChanged: (s) => setState(() => _type = s.first),
           ),
           const SizedBox(height: 16),
-          Text(
-            _amount.isEmpty ? 'Rp 0' : 'Rp $_amount',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+          Semantics(
+            label: 'Nominal saat ini ${_amount.isEmpty ? '0' : _amount} rupiah',
+            liveRegion: true,
+            child: TabularNumber(
+              text: _amount.isEmpty ? 'Rp 0' : 'Rp $_amount',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 12),
           // Keypad 1-9, 0, 00, backspace (DBD §5: nominal cepat).
@@ -712,17 +720,25 @@ class _QuickCashSheetState extends ConsumerState<QuickCashSheet> {
               children: [
                 for (final k in row)
                   Expanded(
-                    child: TextButton(
-                      onPressed: () => setState(() {
-                        if (k == '⌫') {
-                          if (_amount.isNotEmpty) {
-                            _amount = _amount.substring(0, _amount.length - 1);
+                    child: Semantics(
+                      button: true,
+                      label: k == '⌫' ? 'Hapus digit terakhir' : 'Angka $k',
+                      child: TextButton(
+                        // DBD §9: target sentuh minimal 48×48dp
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                        ),
+                        onPressed: () => setState(() {
+                          if (k == '⌫') {
+                            if (_amount.isNotEmpty) {
+                              _amount = _amount.substring(0, _amount.length - 1);
+                            }
+                          } else if (_amount.length < 12) {
+                            _amount = (_amount + k).replaceFirst(RegExp(r'^0+(?=\d)'), '');
                           }
-                        } else if (_amount.length < 12) {
-                          _amount = (_amount + k).replaceFirst(RegExp(r'^0+(?=\d)'), '');
-                        }
-                      }),
-                      child: Text(k, style: const TextStyle(fontSize: 22)),
+                        }),
+                        child: Text(k, style: const TextStyle(fontSize: 22)),
+                      ),
                     ),
                   ),
               ],
@@ -823,12 +839,22 @@ class _DashboardTab extends ConsumerWidget {
             child: Text('Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
           feed.when(
-            loading: () => const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator())),
-            error: (e, _) => Padding(padding: const EdgeInsets.all(16), child: Text('Gagal: $e')),
+            loading: () => const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => ErrorState(
+              message: 'Gagal memuat transaksi: $e',
+              onRetry: () => ref.invalidate(feedProvider),
+            ),
             data: (items) => items.isEmpty
                 ? const Padding(
-                    padding: EdgeInsets.all(32),
-                    child: Center(child: Text('Belum ada transaksi.')),
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: EmptyState(
+                      icon: Icons.add_circle_outline,
+                      message:
+                          'Belum ada transaksi di periode ini.\nTap + untuk catat pengeluaran tunai.',
+                    ),
                   )
                 : Column(children: items.take(5).map((t) => TransactionTile(tx: t)).toList()),
           ),
@@ -884,9 +910,15 @@ class _FeedTab extends ConsumerWidget {
         Expanded(
           child: feed.when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, _) => Center(child: Text('Gagal: $e')),
+            error: (e, _) => ErrorState(
+              message: 'Gagal memuat riwayat: $e',
+              onRetry: () => ref.invalidate(filteredFeedProvider),
+            ),
             data: (items) => items.isEmpty
-                ? const Center(child: Text('Belum ada transaksi.'))
+                ? const EmptyState(
+                    message:
+                        'Belum ada transaksi untuk filter ini.\nCoba pilih filter lain atau catat tunai.',
+                  )
                 : ListView.builder(
                     itemCount: items.length,
                     itemBuilder: (_, i) => TransactionTile(tx: items[i]),

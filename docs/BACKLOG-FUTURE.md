@@ -70,10 +70,11 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Saran: Cursor pagination bila data tumbuh; opsi hari awal minggu dan agregasi per sumber masuk fase 2 atau T-021/T-022.
 
 ## T-008: Dashboard sederhana + layar feed
-- Dilewati: `CategoryDonutChart` **belum ada** di Dashboard (areanya baru berupa penanda, belum ada widget chart), tombol "Lihat Semua" di preview transaksi belum ada (hanya 5 item teratas tanpa navigasi), filter chip sumber di feed belum ada, dan tidak ada empty state/loading skeleton yang proper (loading hanya spinner `CircularProgressIndicator`). Angka nominal belum memakai `fontFeatures: tabularFigures` seperti DBD §4.
-- Risiko: Dashboard belum memenuhi FR-08 penuh dan melenceng dari DBD §4 (angka rata). Preview transaksi yang terpotong 5 item tanpa jalan keluar navigasi — user harus pindah tab secara manual.
+- Dilewati: Tombol "Lihat Semua" di preview transaksi belum ada (hanya 5 item teratas tanpa navigasi), filter chip sumber di feed belum ada, dan tidak ada empty state/loading skeleton yang proper (loading hanya spinner `CircularProgressIndicator`). Angka nominal belum memakai `fontFeatures: tabularFigures` seperti DBD §4.
+- Catatan: `CategoryDonutChart` **Selesai di T-021** (donut chart via fl_chart dan legend persentase).
+- Risiko: Dashboard belum melengkapi tombol navigasi langsung ke feed penuh. Angka belum tabular figures.
 - Terkait: `lib/ui/dashboard_screen.dart`, FR-08, FR-09, `docs/04-DBD.md` §4, §5.
-- Saran: T-021 (chart + periode), T-022 (filter sumber), T-024 (empty/loading/error + aksesibilitas) menutup semua ini.
+- Saran: T-022 (filter sumber), T-024 (empty/loading/error + aksesibilitas) menutup sisa kekurangan ini.
 
 ## T-009: QuickCashSheet dari FAB
 - Dilewati: Kolom `note` **tidak pernah diisi** dari sheet (hanya ada di layar koreksi T-019), dan `dedup_hash` untuk transaksi tunai dibuat dari timestamp milidetik (`cash-<millis>`) — bukan hash kanonikal `DedupService.computeHash` seperti transaksi otomatis. Tidak ada haptic pada saat memilih kategori (hanya saat menyimpan). Tidak ada konfirmasi nominal 0 / negatif (hanya disable tombol).
@@ -129,3 +130,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Pengguna tidak bisa memperbaiki rule yang salah tanpa mengubah kode (mis. mengubah `priority` agar rule spesifik menang). `trimLogs()` yang memuat semua baris akan melambat saat log mendekati ribuan baris. Karena retensi hanya jalan saat ada notifikasi baru, log bisa melebihi 200 kalau `parse()` tidak pernah dipanggil.
 - Terkait: `lib/ui/parser_log_screen.dart`, `lib/services/parser_engine.dart` (`ParserRuleTesting`, `trimLogs`, `updateRulePattern`, `clearLogs`), FR-10, NFR-06, `docs/03-AFD.md` §6, `docs/05-BSD.md` §1.3, §5, §8.
 - Saran: CRUD rule penuh + ekspor/impor JSON masuk fase 2; optimasi `trimLogs` jadi `DELETE WHERE id NOT IN (SELECT ... LIMIT 200)` saat T-026; verifikasi manual ubah-rule-tanpa-build masuk checklist §7.2.
+
+## T-021: Chart kategori + picker periode (M4.1)
+- Dilewati: Tap segmen donut chart belum memfilter feed transaksi (di DBD §5 tertulis 'tap segmen -> filter feed'), hanya menampilkan visual donut dan legend. Legend dibatasi maksimal 4 kategori teratas (sisanya tidak tampil di list legend kecil dashboard). Belum ada animasi custom atau tooltip nominal saat segmen disentuh.
+- Risiko: Interaktivitas antar-komponen dashboard belum 100% seperti konsep interaktif (hanya visual chart statis). Pengeluaran kategori ke-5 dan seterusnya hanya tampak sebagai irisan warna tanpa label teks di card.
+- Terkait: `lib/ui/dashboard_screen.dart` (`CategoryDonutChart`), FR-08, DBD §5.
+- Saran: Filter feed via tap chart ditambahkan di T-022 saat filter chip feed dibangun; ekspansi legend kategori masuk T-024.

@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,6 +25,12 @@ final cashFlowProvider = FutureProvider<CashFlow>((ref) async {
   final repo = ref.watch(repositoryProvider);
   final period = ref.watch(selectedPeriodProvider);
   return repo.cashFlow(period);
+});
+
+final categoryExpensesProvider = FutureProvider<List<CategoryTotal>>((ref) async {
+  final repo = ref.watch(repositoryProvider);
+  final period = ref.watch(selectedPeriodProvider);
+  return repo.expenseByCategory(period);
 });
 
 final feedProvider = FutureProvider<List<Transaction>>((ref) async {
@@ -251,6 +258,136 @@ class CashFlowCard extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Donut chart kategori pengeluaran via fl_chart (FR-08, DBD §5)
+class CategoryDonutChart extends ConsumerWidget {
+  const CategoryDonutChart({super.key});
+
+  static const List<Color> palette = [
+    Color(0xFF2563EB), // Blue (Opsi A accent)
+    Color(0xFFF59E0B), // Amber
+    Color(0xFF10B981), // Emerald
+    Color(0xFF8B5CF6), // Purple
+    Color(0xFFEC4899), // Pink
+    Color(0xFF06B6D4), // Cyan
+    Color(0xFF64748B), // Slate / Lainnya
+  ];
+
+  String _formatRp(int amount) => 'Rp ${amount.toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]}.',
+      )}';
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final expenses = ref.watch(categoryExpensesProvider);
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Breakdown Kategori',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            expenses.when(
+              loading: () => const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: CircularProgressIndicator())),
+              error: (e, _) => Text('Gagal: $e'),
+              data: (items) {
+                if (items.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text('Belum ada pengeluaran di periode ini.',
+                          style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    ),
+                  );
+                }
+
+                final total =
+                    items.fold<int>(0, (sum, item) => sum + item.total);
+
+                return Row(
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      height: 100,
+                      child: PieChart(
+                        PieChartData(
+                          sectionsSpace: 2,
+                          centerSpaceRadius: 28,
+                          sections: [
+                            for (var i = 0; i < items.length; i++)
+                              PieChartSectionData(
+                                value: items[i].total.toDouble(),
+                                color: palette[i % palette.length],
+                                showTitle: false,
+                                radius: 18,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var i = 0; i < items.take(4).length; i++) ...[
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: palette[i % palette.length],
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    items[i].categoryName,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                ),
+                                Text(
+                                  '${total > 0 ? ((items[i].total / total) * 100).toStringAsFixed(0) : 0}%',
+                                  style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _formatRp(items[i].total),
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey.shade600),
+                                ),
+                              ],
+                            ),
+                            if (i < items.take(4).length - 1)
+                              const SizedBox(height: 4),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),
@@ -673,12 +810,14 @@ class _DashboardTab extends ConsumerWidget {
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(cashFlowProvider);
+        ref.invalidate(categoryExpensesProvider);
         ref.invalidate(feedProvider);
       },
       child: ListView(
         children: [
           const StatusBanner(),
           const CashFlowCard(),
+          const CategoryDonutChart(),
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text('Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

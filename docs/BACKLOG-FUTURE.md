@@ -191,3 +191,17 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Pada ponsel layar kecil, keypad tidak langsung terlihat tanpa scroll — sedikit melanggar target "input < 5 detik" (FR-07/NFR-05) karena butuh satu gesture tambahan.
 - Associated: `lib/ui/dashboard_screen.dart` (`_QuickCashSheetState`, `_typeToggle`, `_keypad`), FR-07, NFR-05, `docs/04-DBD.md` §5.
 - Saran: Perkecil tinggi header/chip atau pakai keypad lebih ringkas agar semua muat tanpa scroll; verifikasi waktu input di HP saat checklist §7.2.
+
+## T-034: Detail/Koreksi + Log Parser sesuai mockup option-a (M6.6)
+- Dilewati: Panel **"Teks notifikasi asli"** di layar Detail/Koreksi (ada di mockup) **tidak diimplementasikan** — raw text tersimpan di `parser_logs` tetapi tidak ada relasi transaksi↔log di skema (kolom `transactions.rule_id`/`created_at` belum ada). Menambahkannya butuh migrasi skema, di luar batas "hanya lapisan UI". Tombol "Hapus" di app bar Detail/Koreksi hanya berupa teks tanpa ikon (mockup memakai teks "Hapus" merah — sesuai). Layar Log Parser belum punya tombol ekspor/impor rule atau hapus satuan per entri (hanya hapus semua). Badge status di daftar log memakai label huruf kecil (`parsed`/`failed`/`ignored`) sedangkan stat card memakai huruf kapital — konsisten dengan mockup yang juga menampilkan keduanya berbeda.
+- Risiko: Pengguna tidak bisa membandingkan nominal hasil koreksi dengan teks notifikasi aslinya dalam satu layar (harus buka Log Parser terpisah dan mencocokkan manual).
+- Associated: `lib/ui/dashboard_screen.dart` (`TransactionDetailScreen`), `lib/ui/parser_log_screen.dart`, FR-06, FR-10, `docs/04-DBD.md` §6, `docs/mockups/option-a/index.html`.
+- Saran: Panel teks asli memerlukan kolom penghubung (`transactions.parser_log_id`) — **butuh keputusan pengguna** karena mengubah skema DB (migrasi v1→v2).
+
+---
+
+## Ringkasan Penyelarasan UI (T-029..T-034)
+- Seluruh token warna/tipografi/radius dari mockup option-a kini terpusat di `lib/ui/app_theme.dart`; widget baru memakai token, widget lama masih menyisakan literal (lihat T-029).
+- 6 layar/tab telah diselaraskan: Dashboard, Transaksi, Pengaturan, QuickCashSheet, Detail/Koreksi, Log Parser.
+- Total test suite naik dari 109 (sebelum T-029) menjadi 141, seluruhnya hijau.
+- Belum diverifikasi secara visual di perangkat — butuh screenshot baru ke `docs/realTest/after` untuk perbandingan akhir.

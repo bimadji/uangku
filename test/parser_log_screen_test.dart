@@ -127,9 +127,9 @@ void main() {
       }
 
       await pump(tester, const ParserLogScreen());
-      expect(find.text('Parsed'), findsOneWidget);
-      expect(find.text('Failed'), findsOneWidget);
-      expect(find.text('Ignored'), findsOneWidget);
+      expect(find.text('PARSED'), findsOneWidget);
+      expect(find.text('FAILED'), findsOneWidget);
+      expect(find.text('IGNORED'), findsOneWidget);
       expect(find.textContaining('body ok-entry'), findsOneWidget);
     });
 

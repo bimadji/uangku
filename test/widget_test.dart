@@ -25,6 +25,11 @@ void main() {
   tearDown(() => db.close());
 
   Future<void> pumpApp(WidgetTester tester) async {
+    // Viewport uji default 800x600 terlalu pendek untuk layar HP nyata;
+    // pakai ukuran ponsel (360x900 logical) agar form panjang terlihat utuh.
+    tester.view.physicalSize = const Size(1080, 2700);
+    tester.view.devicePixelRatio = 3.0;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [databaseProvider.overrideWithValue(db)],
@@ -180,6 +185,13 @@ void main() {
     // Edit merchant
     await tester.enterText(
         find.widgetWithText(TextField, 'Merchant / Keterangan'), 'Warung Baru');
+    // Tombol simpan ada di bawah form panjang (mockup) — scroll dulu.
+    await tester.scrollUntilVisible(
+      find.text('Simpan Perubahan'),
+      300,
+      scrollable: find.byType(Scrollable).last,
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Simpan Perubahan'));
     await tester.pumpAndSettle();
 
@@ -208,8 +220,8 @@ void main() {
     await tester.tap(find.text('Item Hapus'));
     await tester.pumpAndSettle();
 
-    // Tap icon delete
-    await tester.tap(find.byIcon(Icons.delete_outline));
+    // Tombol "Hapus" di app bar (mockup: teks, bukan ikon)
+    await tester.tap(find.text('Hapus'));
     await tester.pumpAndSettle();
 
     expect(find.text('Hapus Transaksi?'), findsOneWidget);

@@ -41,6 +41,31 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!-- Widget home screen 4x1 (FR-07, DBD §7) -->
+        <receiver
+            android:name=".UangkuWidgetProvider"
+            android:exported="true"
+            android:label="Uangku">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/uangku_widget_info" />
+        </receiver>
+
+        <!-- Quick Settings Tile: tap "+" → QuickCashSheet (FR-07, DBD §7) -->
+        <service
+            android:name=".UangkuTileService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="Uangku"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

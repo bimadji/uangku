@@ -7,12 +7,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uangku/data/database.dart';
+import 'package:uangku/data/transaction_repository.dart' show Period;
 import 'package:uangku/services/categorizer_service.dart';
 import 'package:uangku/services/dedup_service.dart';
 import 'package:uangku/services/local_notif_service.dart';
 import 'package:uangku/services/notif_ingest_service.dart';
 import 'package:uangku/services/parser_engine.dart';
 import 'package:uangku/services/platform_bridge.dart';
+import 'package:uangku/services/widget_bridge.dart';
 import 'package:uangku/ui/dashboard_screen.dart';
 import 'package:uangku/ui/onboarding_screen.dart';
 
@@ -58,13 +60,34 @@ class UangkuApp extends ConsumerStatefulWidget {
 
 class _UangkuAppState extends ConsumerState<UangkuApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
-
   @override
   void initState() {
     super.initState();
     // Listener hanya menerima event saat engine hidup (lihat backlog T-011).
     widget.ingest.start(PlatformBridge.notificationStream);
     widget.ingest.localNotif.onAction = _handleNotifAction;
+    WidgetBridge.clicks.listen(_handleWidgetClick);
+    _refreshWidget();
+  }
+
+  /// Widget home screen menampilkan pengeluaran hari ini (DBD §7).
+  Future<void> _refreshWidget() async {
+    final repo = ref.read(repositoryProvider);
+    final flow = await repo.cashFlow(Period.day);
+    await WidgetBridge.updateExpenseToday(flow.expense);
+  }
+
+  /// Widget / tile diklik → buka QuickCashSheet.
+  void _handleWidgetClick(Uri? uri) {
+    if (uri?.toString() == WidgetBridge.quickCashUri) _openQuickCash();
+  }
+
+  void _openQuickCash() {
+    _navigatorKey.currentState?.push(
+      MaterialPageRoute(
+        builder: (_) => const Scaffold(body: QuickCashSheet()),
+      ),
+    );
   }
 
   /// FR-05: "Ubah Kategori" membuka layar Detail/Koreksi (AFD §3).

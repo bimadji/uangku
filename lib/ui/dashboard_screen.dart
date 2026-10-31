@@ -1129,33 +1129,82 @@ final filteredFeedProvider = FutureProvider<List<Transaction>>((ref) async {
 class _FeedTab extends ConsumerWidget {
   const _FeedTab();
 
+  static const _monthNames = [
+    '', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'
+  ];
+
+  static String _formatDateGroup(DateTime d) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final target = DateTime(d.year, d.month, d.day);
+
+    final dateStr = '${d.day} ${_monthNames[d.month]} ${d.year}';
+    if (target == today) return 'Hari Ini · $dateStr';
+    if (target == yesterday) return 'Kemarin · $dateStr';
+    return dateStr;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final feed = ref.watch(filteredFeedProvider);
     final selected = ref.watch(feedSourceFilterProvider);
+    final categoryMap = ref.watch(categoryNameMapProvider).value ?? {};
 
-    Widget chip(String label, TxSource? value) => ChoiceChip(
-          label: Text(label, style: const TextStyle(fontSize: 12)),
-          selected: selected == value,
-          onSelected: (_) =>
-              ref.read(feedSourceFilterProvider.notifier).state = value,
-        );
+    Widget filterChip(String label, TxSource? value, {Widget? badge}) {
+      final isSelected = selected == value;
+      return GestureDetector(
+        onTap: () => ref.read(feedSourceFilterProvider.notifier).state = value,
+        child: Container(
+          height: 36,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.accent : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: isSelected ? AppColors.accent : AppColors.border,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (badge != null) ...[
+                badge,
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected ? Colors.white : AppColors.fg,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Column(
       children: [
+        // Filter baris atas (mockup: pill 36px ber-badge)
         SizedBox(
-          height: 56,
+          height: 52,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.screen, vertical: 8),
             children: [
-              chip('Semua', null),
+              filterChip('Semua', null),
               const SizedBox(width: 8),
-              chip('BTN', TxSource.BTN),
+              filterChip('BTN', TxSource.BTN),
               const SizedBox(width: 8),
-              chip('GoPay', TxSource.GOPAY),
+              filterChip('GoPay', TxSource.GOPAY),
               const SizedBox(width: 8),
-              chip('Tunai', TxSource.CASH),
+              filterChip('Tunai', TxSource.CASH),
             ],
           ),
         ),
@@ -1166,15 +1215,63 @@ class _FeedTab extends ConsumerWidget {
               message: 'Gagal memuat riwayat: $e',
               onRetry: () => ref.invalidate(filteredFeedProvider),
             ),
-            data: (items) => items.isEmpty
-                ? const EmptyState(
-                    message:
-                        'Belum ada transaksi untuk filter ini.\nCoba pilih filter lain atau catat tunai.',
-                  )
-                : ListView.builder(
-                    itemCount: items.length,
-                    itemBuilder: (_, i) => TransactionTile(tx: items[i]),
-                  ),
+            data: (items) {
+              if (items.isEmpty) {
+                return const EmptyState(
+                  message:
+                      'Belum ada transaksi untuk filter ini.\nCoba pilih filter lain atau catat tunai.',
+                );
+              }
+
+              // Grouping transaksi per tanggal kalender (mockup option-a)
+              final groups = <String, List<Transaction>>{};
+              for (final tx in items) {
+                final d = DateTime.fromMillisecondsSinceEpoch(tx.occurredAt);
+                final key = _formatDateGroup(d);
+                groups.putIfAbsent(key, () => []).add(tx);
+              }
+
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.screen, 8, AppSpacing.screen, 84),
+                children: [
+                  for (final entry in groups.entries) ...[
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.card),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              entry.key.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.muted,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            for (final t in entry.value)
+                              TransactionRow(
+                                tx: t,
+                                categoryName: categoryMap[t.categoryId],
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        TransactionDetailScreen(tx: t),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.gap),
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ],

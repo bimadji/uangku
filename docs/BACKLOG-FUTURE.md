@@ -173,3 +173,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Nama pengguna di header akan salah bila perangkat dipakai orang lain. Tap "Lihat Semua" bisaetis hopedomi verbally: pengguna mengira filtered periodenya ikut, padahal tidak.
 - Associated: `lib/ui/dashboard_screen.dart` (`CashFlowCard`, `PeriodSelector`, `TransactionRow`, `_OfflineBadge`, `_DashboardTab`), `lib/ui/app_theme.dart`, FR-08, FR-09, DBD §5–§6.
 - Saran: Nama pengguna → tabel profil baru (butuh migrasi skema, di luar scope UI) atau settings sederhana; perbaiki kalimat "Lihat Semua" agar jelas hanya navigasi tab; samakan legend chart di T-031.
+
+## T-031: Transaksi (feed) sesuai mockup option-a (M6.3)
+- Dilewati: Tombol "Export" di header kanan layar (mockup option-a `.screen-header` memuat tautan "Export" biru) **belum diimplementasikan** — ekspor data adalah fitur Fase 2 (PRD §7: backup/export JSON-CSV), bukan cakupan MVP. Grouping tanggal baru membedakan "Hari Ini" dan "Kemarin"; tanggal-tanggal sebelumnya memakai format tanggal standar tanpa perlakuan khusus. Baris transaksi tidak menampilkan jam di samping badge (mockup menampilkan `12:45` di baris subtitle). Tautan filter chip belum mendukung multi-pilih (hanya satu sumber aktif atau semua).
+- Risiko: Pengguna melihat header tanpa jalan keluar untuk mengekspor data (sesuai scope MVP). Ketiadaan jam membuat transaksi pada hari yang sama tidak terlihat urutan waktunya di kartu.
+- Associated: `lib/ui/dashboard_screen.dart` (`_FeedTab`, `_formatDateGroup`), FR-09, `docs/04-DBD.md` §6, `docs/mockups/option-a/index.html`.
+- Saran: Fitur Export masuk Fase 2; jam transaksi ditambahkan ke subtitle baris saat T-034.

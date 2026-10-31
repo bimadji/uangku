@@ -57,7 +57,7 @@ void main() {
 
     testWidgets('Filter BTN hanya menyisakan transaksi BTN', (tester) async {
       await seed(tester);
-      await tester.tap(find.widgetWithText(ChoiceChip, 'BTN'));
+      await tester.tap(find.text('BTN').first);
       await tester.pumpAndSettle();
 
       expect(find.text('- Rp 10.000'), findsOneWidget);
@@ -67,7 +67,7 @@ void main() {
 
     testWidgets('Filter GoPay hanya menyisakan transaksi GoPay', (tester) async {
       await seed(tester);
-      await tester.tap(find.widgetWithText(ChoiceChip, 'GoPay'));
+      await tester.tap(find.text('GoPay').first);
       await tester.pumpAndSettle();
 
       expect(find.text('- Rp 20.000'), findsOneWidget);
@@ -77,7 +77,7 @@ void main() {
 
     testWidgets('Filter Tunai hanya menyisakan transaksi tunai', (tester) async {
       await seed(tester);
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Tunai'));
+      await tester.tap(find.text('Tunai').first);
       await tester.pumpAndSettle();
 
       expect(find.text('- Rp 30.000'), findsOneWidget);
@@ -88,11 +88,11 @@ void main() {
     testWidgets('Kembali ke Semua memunculkan lagi semua transaksi',
         (tester) async {
       await seed(tester);
-      await tester.tap(find.widgetWithText(ChoiceChip, 'BTN'));
+      await tester.tap(find.text('BTN').first);
       await tester.pumpAndSettle();
       expect(find.text('- Rp 20.000'), findsNothing);
 
-      await tester.tap(find.widgetWithText(ChoiceChip, 'Semua'));
+      await tester.tap(find.text('Semua').first);
       await tester.pumpAndSettle();
       expect(find.text('- Rp 10.000'), findsOneWidget);
       expect(find.text('- Rp 20.000'), findsOneWidget);

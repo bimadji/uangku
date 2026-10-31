@@ -38,9 +38,10 @@ void main() {
       (tester) async {
     await pumpApp(tester);
 
+    // Struktur mockup: label 'Arus Kas' + hero pengeluaran + baris bawah
     expect(find.text('Arus Kas'), findsOneWidget);
     expect(find.text('Pemasukan'), findsOneWidget);
-    expect(find.text('Pengeluaran'), findsOneWidget);
+    expect(find.text('Net Arus Kas'), findsOneWidget);
     expect(find.text('Belum ada transaksi di periode ini.\nTap + untuk catat pengeluaran tunai.'), findsOneWidget);
   });
 
@@ -95,7 +96,7 @@ void main() {
     ));
 
     await pumpApp(tester);
-    await tester.tap(find.text('Bulan'));
+    await tester.tap(find.text('Bulan Ini'));
     await tester.pumpAndSettle();
 
     expect(find.text('- Rp 30.000'), findsAtLeast(1));
@@ -160,6 +161,8 @@ void main() {
     ));
 
     await pumpApp(tester);
+    await tester.ensureVisible(find.text('Warung Lama'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Warung Lama'));
     await tester.pumpAndSettle();
 
@@ -191,6 +194,8 @@ void main() {
     ));
 
     await pumpApp(tester);
+    await tester.ensureVisible(find.text('Item Hapus'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Item Hapus'));
     await tester.pumpAndSettle();
 

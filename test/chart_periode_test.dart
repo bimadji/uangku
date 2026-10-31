@@ -57,8 +57,9 @@ void main() {
       await pumpDashboard(tester);
 
       expect(find.text('Breakdown Kategori'), findsOneWidget);
-      expect(find.text('Makanan & Minuman'), findsOneWidget);
-      expect(find.text('Transportasi'), findsOneWidget);
+      // Nama kategori muncul di legend chart DAN di label kategori baris transaksi (mockup)
+      expect(find.text('Makanan & Minuman'), findsNWidgets(2));
+      expect(find.text('Transportasi'), findsNWidgets(2));
       expect(find.text('60%'), findsOneWidget); // 30.000 / 50.000
       expect(find.text('40%'), findsOneWidget); // 20.000 / 50.000
     });
@@ -98,7 +99,7 @@ void main() {
       expect(find.text('Belum ada pengeluaran di periode ini.'), findsOneWidget);
 
       // Ubah ke Bulan
-      await tester.tap(find.text('Bulan'));
+      await tester.tap(find.text('Bulan Ini'));
       await tester.pumpAndSettle();
 
       // Sekarang muncul

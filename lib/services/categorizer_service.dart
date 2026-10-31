@@ -32,7 +32,10 @@ class CategorizerService {
     'Pendidikan': ['BUKU', 'KULIAH', 'SPP', 'UKT', 'PRINT', 'FOTOKOPI', 'ATK'],
     'Uang Saku': ['UANG SAKU', 'ORANG TUA', 'ORANGTUA', 'MAMA', 'PAPA'],
     'Gaji/Part-time': ['GAJI', 'UPAH', 'HONOR', 'FREELANCE', 'PART-TIME'],
-    'Transfer Masuk': ['TRANSFER MASUK', 'TOP UP', 'TOPUP', 'TERIMA TRANSFER'],
+    'Transfer Masuk': [
+      'TRANSFER MASUK', 'TOP UP', 'TOPUP', 'TERIMA TRANSFER',
+      'INTERNET BANKING', 'MOBILE BANKING', 'BANKING APP',
+    ],
   };
 
   /// Isi kolom `keywords` untuk kategori yang belum punya (idempotent).

@@ -12,11 +12,12 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Terkait: Prasyarat T-006 s.d. T-028 di `docs/07-EXECUTION-PLAN.md`.
 - Saran: Jalankan saat ada jeda; tidak ada kode yang perlu diubah.
 
-## T-016: Verifikasi listener pasca-reboot & whitelist baterai (M2.7) — BELUM DIJALANKAN
-- Dilewati: Checklist §7.1 (reboot listener, whitelist baterai, notifikasi app lain diabaikan, notifikasi ganda tertahan dedup) **belum pernah dijalankan di perangkat fisik**. Emulator tidak dipakai karena tidak memadai (TRD §7).
-- Risiko: Belum ada bukti listener bertahan setelah reboot maupun saat battery optimization aktif — ini prasyarat utama DoD M2 dan bisa membatalkan keputusan bridge custom (T-004).
+## T-016: Verifikasi listener pasca-reboot & whitelist baterai (M2.7) — TERVERIFIKASI SEBAGIAN
+- Dilewati: Uji bertahan setelah **reboot penuh tanpa pernah membuka app** dan uji **ketahanan baterai 24 jam** belum selesai dijalankan. Verifikasi baru membuktikan: (1) listener berhasil menerima notifikasi dan menyimpan transaksi ke SQLite saat app berjalan, (2) notifikasi otomatis GoPay Rp 10.000 memicu notifikasi Uangku dan tercatat di DB, (3) notifikasi BTN "Pembelian GoPay Berhasil" tertangkap di log. Uji saat app benar-benar dimatikan belum dilakukan.
+- Risiko: Tanpa background isolate, transaksi yang tiba saat sistem membunuh proses Flutter tetap berisiko hilang. Xiaomi MIUI/HyperOS agresif membersihkan RAM; bila service tidak auto-rebind setelah dibunuh, transaksi digital hilang tanpa pemberitahuan.
 - Terkait: `docs/07-EXECUTION-PLAN.md` §7.1, NFR-04, R-02, R-04.
-- Saran: **Tugas manual untuk pengguna** — jalankan checklist di HP Redmi Note 13 Pro, laporkan hasilnya.
+- Saran: Jalankan uji reboot saat pengguna sengaja merestart HP; jika transaksi pasca-reboot gagal, pasang headless background isolate atau beralih ke plugin (spikes/listener/RESULT.md).
+- Catatan: Masalah listener tidak auto-bind setelah update ditemukan dan **diperbaiki di T-016** lewat `NotificationListenerService.requestRebind()` di MainActivity. Pattern baru BTN "Pembelian GoPay Berhasil" juga didaftarkan.
 
 ## T-019: Layar Detail/Koreksi Transaksi
 - Dilewati: Kolom `note` **tidak pernah diisi dari QuickCashSheet** (hanya bisa diisi di layar koreksi), dan `dedup_hash` transaksi tunai tidak mengikuti `DedupService.computeHash`. Layar detail **tidak menampilkan cuplikan notifikasi asli** seperti yang ada di mockup Opsi A (referensi `docs/mockups/option-a/index.html`), dan tidak menampilkan sumber dana sebagai field read-only terpisah. Tidak ada konfirmasi tambahan bila nominal diubah menjadi 0 (tombol Simpan menolak, tapi tanpa pesan). Waktu transaksi ditampilkan sebagai teks biasa, bukan read-only field yang jelas.

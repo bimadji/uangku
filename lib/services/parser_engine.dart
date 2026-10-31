@@ -1,4 +1,6 @@
 import 'package:drift/drift.dart';
+
+// ponytail: extension butuh OrderingTerm/Value dari drift
 import 'package:uangku/data/database.dart';
 import 'package:uangku/services/platform_bridge.dart';
 
@@ -115,6 +117,7 @@ class ParserEngine {
                   ruleId: Value(rule.id),
                 ),
               );
+          await trimLogs();
 
           return ParsedCandidate(
             packageName: rule.packageName,
@@ -142,7 +145,67 @@ class ParserEngine {
             error: const Value('Pola notifikasi belum didukung'),
           ),
         );
+    await trimLogs();
 
     return null;
   }
+}
+
+/// Hasil uji regex di layar Uji Rule Parser (FR-10).
+class RuleTestResult {
+  const RuleTestResult({this.error, this.amount, this.merchant, this.time});
+  final String? error;
+  final int? amount;
+  final String? merchant;
+  final String? time;
+
+  bool get ok => error == null;
+}
+
+extension ParserRuleTesting on ParserEngine {
+  /// Uji satu pattern terhadap teks mentah tanpa menyentuh database.
+  static RuleTestResult testPattern(String pattern, String text) {
+    try {
+      final match = RegExp(pattern, caseSensitive: false).firstMatch(text);
+      if (match == null) {
+        return const RuleTestResult(error: 'Tidak ada kecocokan');
+      }
+      // namedGroup melempar bila grup tidak ada di pattern (mis. tanpa event_time)
+      String? group(String name) {
+        try {
+          return match.namedGroup(name)?.trim();
+        } catch (_) {
+          return null;
+        }
+      }
+
+      final rawAmount = group('amount');
+      return RuleTestResult(
+        amount: rawAmount == null ? null : int.tryParse(rawAmount.replaceAll('.', '')),
+        merchant: group('merchant'),
+        time: group('event_time'),
+      );
+    } on FormatException catch (e) {
+      return RuleTestResult(error: 'Regex tidak valid: ${e.message}');
+    }
+  }
+
+  /// Retensi LRU: simpan 200 entri terbaru saja (BSD §8, TRD §6).
+  Future<void> trimLogs({int keep = 200}) async {
+    final rows = await (db.select(db.parserLogs)
+          ..orderBy([(l) => OrderingTerm.desc(l.postedAt)]))
+        .get();
+    if (rows.length <= keep) return;
+    final ids = rows.skip(keep).map((r) => r.id).toList();
+    await (db.delete(db.parserLogs)..where((l) => l.id.isIn(ids))).go();
+  }
+
+  /// Ubah pattern sebuah rule in-app, tanpa build ulang (FR-10, NFR-06).
+  Future<void> updateRulePattern(int ruleId, String pattern) async {
+    await (db.update(db.parserRules)..where((r) => r.id.equals(ruleId)))
+        .write(ParserRulesCompanion(pattern: Value(pattern)));
+  }
+
+  /// Hapus seluruh log mentah (TRD §6: pengguna bisa menghapus).
+  Future<int> clearLogs() => db.delete(db.parserLogs).go();
 }

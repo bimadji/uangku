@@ -6,6 +6,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:uangku/data/database.dart';
 import 'package:uangku/data/transaction_repository.dart';
 import 'package:uangku/services/platform_bridge.dart';
+import 'package:uangku/ui/parser_log_screen.dart';
 
 // ---- Riverpod Providers ----
 
@@ -781,6 +782,21 @@ class _SettingsTab extends ConsumerWidget {
                 ),
               ),
             ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          margin: EdgeInsets.zero,
+          child: ListTile(
+            leading: const Icon(Icons.bug_report_outlined),
+            title: const Text('Log Parser & Uji Rule',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            subtitle: const Text('Riwayat notifikasi mentah + editor regex',
+                style: TextStyle(fontSize: 12)),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ParserLogScreen()),
+            ),
           ),
         ),
         const SizedBox(height: 24),

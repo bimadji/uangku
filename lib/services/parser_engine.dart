@@ -31,45 +31,70 @@ class ParserEngine {
 
   /// Inisialisasi rule awal ke database dari sampel aktual nyata (T-010)
   Future<void> seedInitialRules() async {
-    final existing = await db.select(db.parserRules).get();
-    if (existing.isNotEmpty) return;
+    Future<bool> exists(String pattern) async {
+      final found = await (db.select(db.parserRules)
+            ..where((r) => r.pattern.equals(pattern)))
+          .getSingleOrNull();
+      return found != null;
+    }
 
     // 1. GoPay: Top Up Masuk (Sampel: Top up Rp10.000 via BTN Internet Banking App udah masuk.)
-    await db.into(db.parserRules).insert(
-          ParserRulesCompanion.insert(
-            packageName: 'com.gojek.gopay',
-            appLabel: 'GoPay',
-            txType: TxType.income,
-            pattern: r'Top up Rp(?<amount>[\d\.]+) via (?<merchant>.*) udah masuk',
-            priority: const Value(10),
-            enabled: const Value(1),
-          ),
-        );
+    if (!await exists(r'Top up Rp(?<amount>[\d\.]+) via (?<merchant>.*) udah masuk')) {
+      await db.into(db.parserRules).insert(
+            ParserRulesCompanion.insert(
+              packageName: 'com.gojek.gopay',
+              appLabel: 'GoPay',
+              txType: TxType.income,
+              pattern: r'Top up Rp(?<amount>[\d\.]+) via (?<merchant>.*) udah masuk',
+              priority: const Value(10),
+              enabled: const Value(1),
+            ),
+          );
+    }
 
     // 2. Bale by BTN: QRIS Payment (Sampel: Payment GEPREK MASZEH ITS Successful)
     // Catatan: Notifikasi Bale tidak mencantumkan nominal (amount=0 agar ditandai perlu edit manual)
-    await db.into(db.parserRules).insert(
-          ParserRulesCompanion.insert(
-            packageName: 'id.co.btn.mobilebanking.android',
-            appLabel: 'BTN',
-            txType: TxType.expense,
-            pattern: r'Payment (?<merchant>.*) Successful',
-            priority: const Value(10),
-            enabled: const Value(1),
-          ),
-        );
+    if (!await exists(r'Payment (?<merchant>.*) Successful')) {
+      await db.into(db.parserRules).insert(
+            ParserRulesCompanion.insert(
+              packageName: 'id.co.btn.mobilebanking.android',
+              appLabel: 'BTN',
+              txType: TxType.expense,
+              pattern: r'Payment (?<merchant>.*) Successful',
+              priority: const Value(10),
+              enabled: const Value(1),
+            ),
+          );
+    }
 
     // 3. Bale by BTN: Transfer Masuk (Sampel: Transfer Masuk)
-    await db.into(db.parserRules).insert(
-          ParserRulesCompanion.insert(
-            packageName: 'id.co.btn.mobilebanking.android',
-            appLabel: 'BTN',
-            txType: TxType.income,
-            pattern: r'^Transfer Masuk$',
-            priority: const Value(5),
-            enabled: const Value(1),
-          ),
-        );
+    if (!await exists(r'^Transfer Masuk$')) {
+      await db.into(db.parserRules).insert(
+            ParserRulesCompanion.insert(
+              packageName: 'id.co.btn.mobilebanking.android',
+              appLabel: 'BTN',
+              txType: TxType.income,
+              pattern: r'^Transfer Masuk$',
+              priority: const Value(5),
+              enabled: const Value(1),
+            ),
+          );
+    }
+
+    // 4. Bale by BTN: Pembelian GoPay (Sampel: "Pembelian GoPay Berhasil")
+    // Nominal opsional: snatch kalau ada di teks, selain itu amount=0 (perlu edit manual).
+    if (!await exists(r'Pembelian GoPay Berhasil(?:.*?Rp(?<amount>[\d\.]+))?')) {
+      await db.into(db.parserRules).insert(
+            ParserRulesCompanion.insert(
+              packageName: 'id.co.btn.mobilebanking.android',
+              appLabel: 'BTN',
+              txType: TxType.expense,
+              pattern: r'Pembelian GoPay Berhasil(?:.*?Rp(?<amount>[\d\.]+))?',
+              priority: const Value(10),
+              enabled: const Value(1),
+            ),
+          );
+    }
   }
 
   /// Eksekusi parsing terhadap notifikasi mentah

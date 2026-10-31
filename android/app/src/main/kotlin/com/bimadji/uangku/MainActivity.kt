@@ -33,6 +33,7 @@ class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         activityInstance = this
+        requestListenerRebind()
 
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, METHOD_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
@@ -85,6 +86,17 @@ class MainActivity : FlutterActivity() {
         )
     }
 
+    private fun requestListenerRebind() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                val component = android.content.ComponentName(this, UangkuNotificationListener::class.java)
+                NotificationListenerService.requestRebind(component)
+            } catch (_: Exception) {
+                // Abaikan bila OS menolak
+            }
+        }
+    }
+
     override fun onDestroy() {
         activityInstance = null
         eventSink = null
@@ -98,6 +110,10 @@ class UangkuNotificationListener : NotificationListenerService() {
             "id.co.btn.mobilebanking.android",
             "com.gojek.gopay"
         )
+    }
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {

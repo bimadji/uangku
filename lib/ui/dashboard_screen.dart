@@ -838,21 +838,62 @@ class _DashboardTab extends ConsumerWidget {
   }
 }
 
+/// Filter sumber dana feed (FR-09). `null` = semua sumber.
+final feedSourceFilterProvider = StateProvider<TxSource?>((ref) => null);
+
+final filteredFeedProvider = FutureProvider<List<Transaction>>((ref) async {
+  final repo = ref.watch(repositoryProvider);
+  final source = ref.watch(feedSourceFilterProvider);
+  final all = await repo.feed();
+  return source == null ? all : all.where((t) => t.source == source).toList();
+});
+
 class _FeedTab extends ConsumerWidget {
   const _FeedTab();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final feed = ref.watch(feedProvider);
-    return feed.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => Center(child: Text('Gagal: $e')),
-      data: (items) => items.isEmpty
-          ? const Center(child: Text('Belum ada transaksi.'))
-          : ListView.builder(
-              itemCount: items.length,
-              itemBuilder: (_, i) => TransactionTile(tx: items[i]),
-            ),
+    final feed = ref.watch(filteredFeedProvider);
+    final selected = ref.watch(feedSourceFilterProvider);
+
+    Widget chip(String label, TxSource? value) => ChoiceChip(
+          label: Text(label, style: const TextStyle(fontSize: 12)),
+          selected: selected == value,
+          onSelected: (_) =>
+              ref.read(feedSourceFilterProvider.notifier).state = value,
+        );
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 56,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            children: [
+              chip('Semua', null),
+              const SizedBox(width: 8),
+              chip('BTN', TxSource.BTN),
+              const SizedBox(width: 8),
+              chip('GoPay', TxSource.GOPAY),
+              const SizedBox(width: 8),
+              chip('Tunai', TxSource.CASH),
+            ],
+          ),
+        ),
+        Expanded(
+          child: feed.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Gagal: $e')),
+            data: (items) => items.isEmpty
+                ? const Center(child: Text('Belum ada transaksi.'))
+                : ListView.builder(
+                    itemCount: items.length,
+                    itemBuilder: (_, i) => TransactionTile(tx: items[i]),
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }

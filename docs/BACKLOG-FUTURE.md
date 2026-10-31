@@ -167,3 +167,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: UI bisa menyimpang dari mockup di task-task berikutnya karena widget masih memakai nilai lama sendiri-sendiri; perubahan token tidak otomatis merambat ke semua tempat.
 - Associated: `lib/ui/app_theme.dart`, `lib/main.dart`, `docs/04-DBD.md` §3–§4, `docs/mockups/option-a/index.html`.
 - Saran: Migrasikan literal ke token dilakukan bertahap di T-030..T-034 sesuai layar yang dikerjakan; Tambahkan lint check (grep tanpa hex di luar app_theme.dart) bila seluruh layar selesai.
+
+## T-030: Dashboard sesuai mockup option-a (M6.2)
+- Dilewati: Greeting "Halo, Bima" memakai **nama hardcode** — tidak ada sumber nama pengguna di DB (tidak ada tabel profil), jadi untuk sementara konstan. "Lihat Semua" hanya berpindah ke tab Transaksi, **tanpa** menyaring periode/sumber yang sedang aktif. Iconografi baris transaksi tetap panah ↑/↓ (keputusan pengguna), bukan emoji mockup. Ikon avatar 40px memakai `Icons.arrow_upward/arrow_downward`, mockup memakai emoji kategori — warna & layout sudah sama. Chart donut dikecilkan ke 84px (mockup) tetapi **legend masih memakai format lama** (persentase + nominal tanpa ■ dan tanpa nama singkat) — penyempurnaan legend masuk T-031. Tidak ada animasi atau transisi apa pun (mockup statis juga).
+- Risiko: Nama pengguna di header akan salah bila perangkat dipakai orang lain. Tap "Lihat Semua" bisaetis hopedomi verbally: pengguna mengira filtered periodenya ikut, padahal tidak.
+- Associated: `lib/ui/dashboard_screen.dart` (`CashFlowCard`, `PeriodSelector`, `TransactionRow`, `_OfflineBadge`, `_DashboardTab`), `lib/ui/app_theme.dart`, FR-08, FR-09, DBD §5–§6.
+- Saran: Nama pengguna → tabel profil baru (butuh migrasi skema, di luar scope UI) atau settings sederhana; perbaiki kalimat "Lihat Semua" agar jelas hanya navigasi tab; samakan legend chart di T-031.

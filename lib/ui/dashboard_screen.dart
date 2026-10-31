@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:uangku/data/database.dart';
 import 'package:uangku/data/transaction_repository.dart';
 import 'package:uangku/services/platform_bridge.dart';
+import 'package:uangku/ui/app_theme.dart';
 import 'package:uangku/ui/parser_log_screen.dart';
 import 'package:uangku/ui/states.dart';
 
@@ -21,6 +22,9 @@ final repositoryProvider = Provider<TransactionRepository>((ref) {
 });
 
 final selectedPeriodProvider = StateProvider<Period>((ref) => Period.day);
+
+/// Tab aktif di bottom navigation (0=Dashboard, 1=Transaksi, 2=Pengaturan).
+final selectedTabProvider = StateProvider<int>((ref) => 0);
 
 final cashFlowProvider = FutureProvider<CashFlow>((ref) async {
   final repo = ref.watch(repositoryProvider);
@@ -37,6 +41,13 @@ final categoryExpensesProvider = FutureProvider<List<CategoryTotal>>((ref) async
 final feedProvider = FutureProvider<List<Transaction>>((ref) async {
   final repo = ref.watch(repositoryProvider);
   return repo.feed();
+});
+
+/// Peta id kategori -> nama, dipakai label kategori di baris transaksi (mockup `.tx-time`).
+final categoryNameMapProvider = FutureProvider<Map<int, String>>((ref) async {
+  final db = ref.watch(databaseProvider);
+  final cats = await db.select(db.categories).get();
+  return {for (final c in cats) c.id: c.name};
 });
 
 final categoryListProvider = FutureProvider<List<Category>>((ref) async {
@@ -207,72 +218,246 @@ class ModeChip extends StatelessWidget {
   }
 }
 
+/// Kartu arus kas: hero nominal pengeluaran + baris bawah Pemasukan & Net Arus Kas
+/// (mockup option-a `.card.cashflow-hero`). Segmented periode berada di luar
+/// kartu (baris penuh di atasnya) — mockup `screen-content`.
 class CashFlowCard extends ConsumerWidget {
   const CashFlowCard({super.key});
 
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentPeriod = ref.watch(selectedPeriodProvider);
     final flow = ref.watch(cashFlowProvider);
 
     return Card(
-      margin: const EdgeInsets.all(16),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.card),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                const Text('Arus Kas', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                const Spacer(),
-                SegmentedButton<Period>(
-                  segments: const [
-                    ButtonSegment(value: Period.day, label: Text('Hari')),
-                    ButtonSegment(value: Period.week, label: Text('Minggu')),
-                    ButtonSegment(value: Period.month, label: Text('Bulan')),
-                  ],
-                  selected: {currentPeriod},
-                  onSelectionChanged: (s) =>
-                      ref.read(selectedPeriodProvider.notifier).state = s.first,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
+            Text('Arus Kas', style: AppText.cardLabel),
+            const SizedBox(height: 4),
             flow.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Text('Gagal memuat: $e'),
+              loading: () => const SizedBox(
+                height: 32,
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (e, _) => Text('Gagal memuat: $e', style: AppText.bodyRegular),
+              data: (data) => TabularNumber(
+                text: '- ${formatRp(data.expense)}',
+                style: AppText.heroAmount.copyWith(color: AppColors.expense),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(height: 1, color: AppColors.borderSoft),
+            const SizedBox(height: 12),
+            flow.when(
+              loading: () => const SizedBox(height: 36),
+              error: (e, _) => const SizedBox(height: 36),
               data: (data) => Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  Column(
-                    children: [
-                      const Text('Pemasukan', style: TextStyle(color: Colors.grey)),
-                      const SizedBox(height: 4),
-                      TabularNumber(
-                        text: '+ ${formatRp(data.income)}',
-                        style: const TextStyle(
-                            color: Colors.green, fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Pemasukan', style: AppText.metricLabel),
+                        const SizedBox(height: 2),
+                        TabularNumber(
+                          text: '+ ${formatRp(data.income)}',
+                          style: AppText.metricValue.copyWith(color: AppColors.income),
+                        ),
+                      ],
+                    ),
                   ),
-                  Column(
-                    children: [
-                      const Text('Pengeluaran', style: TextStyle(color: Colors.grey)),
-                      const SizedBox(height: 4),
-                      TabularNumber(
-                        text: '- ${formatRp(data.expense)}',
-                        style: const TextStyle(
-                            color: Colors.red, fontSize: 16, fontWeight: FontWeight.bold),
-                      ),
-                    ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Net Arus Kas', style: AppText.metricLabel),
+                        const SizedBox(height: 2),
+                        TabularNumber(
+                          text: '${data.net >= 0 ? '+' : '-'} ${formatRp(data.net.abs())}',
+                          style: AppText.metricValue.copyWith(color: AppColors.fg),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Segmented pilihan periode — baris penuh di atas kartu Arus Kas (mockup).
+class PeriodSelector extends ConsumerWidget {
+  const PeriodSelector({super.key});
+
+  static const _labels = {
+    Period.day: 'Hari Ini',
+    Period.week: 'Minggu Ini',
+    Period.month: 'Bulan Ini',
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(selectedPeriodProvider);
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: AppColors.border,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          for (final period in Period.values)
+            Expanded(
+              child: GestureDetector(
+                onTap: () =>
+                    ref.read(selectedPeriodProvider.notifier).state = period,
+                child: Semantics(
+                  button: true,
+                  selected: current == period,
+                  label: _labels[period],
+                  child: Container(
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: current == period
+                          ? AppColors.surface
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      _labels[period]!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: current == period ? AppColors.fg : AppColors.muted,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+
+/// Badge "OFFLINE 100%" di header Dashboard (mockup `.badge-btn`).
+class _OfflineBadge extends StatelessWidget {
+  const _OfflineBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        border: Border.all(color: AppColors.badgeBtnBorder),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Text('OFFLINE 100%', style: AppText.badge),
+    );
+  }
+}
+
+/// Baris transaksi bergaya mockup `.tx-item`: avatar 40px, badge sumber,
+/// chip mode, jam, nominal kanan + nama kategori di bawahnya.
+class TransactionRow extends StatelessWidget {
+  const TransactionRow({
+    super.key,
+    required this.tx,
+    this.categoryName,
+    this.onTap,
+  });
+
+  final Transaction tx;
+  final String? categoryName;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final isExpense = tx.type == TxType.expense;
+    final color = isExpense ? AppColors.expense : AppColors.income;
+
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+      constraints: const BoxConstraints(minHeight: 52),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: AppColors.borderSoft)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceSubtle,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isExpense ? Icons.arrow_downward : Icons.arrow_upward,
+              size: 18,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  tx.merchant ?? (isExpense ? 'Pengeluaran' : 'Pemasukan'),
+                  style: AppText.body,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    SourceBadge(source: tx.source),
+                    const SizedBox(width: 6),
+                    ModeChip(origin: tx.origin),
+                    if (tx.note != null) ...[
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          tx.note!,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.caption,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TabularNumber(
+                text: '${isExpense ? '-' : '+'} ${formatRp(tx.amount)}',
+                style: AppText.txAmount.copyWith(color: color),
+              ),
+              if (categoryName != null) ...[
+                const SizedBox(height: 2),
+                Text(categoryName!, style: AppText.caption),
+              ],
+            ],
+          ),
+        ],
+      ),
       ),
     );
   }
@@ -775,38 +960,53 @@ class _QuickCashSheetState extends ConsumerState<QuickCashSheet> {
 
 // ---- Layar Utama (AFD §1: 3 Tab) ----
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerWidget {
   const MainScreen({super.key});
 
-  @override
-  State<MainScreen> createState() => _MainScreenState();
-}
-
-class _MainScreenState extends State<MainScreen> {
-  int _tab = 0;
-
-  Future<void> _openQuickCash() => showModalBottomSheet(
+  Future<void> _openQuickCash(BuildContext context) => showModalBottomSheet(
         context: context,
         isScrollControlled: true,
         builder: (_) => const QuickCashSheet(),
       );
 
+  static const _titles = {
+    0: 'Ringkasan Uangku',
+    1: 'Riwayat Transaksi',
+    2: 'Pengaturan',
+  };
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tab = ref.watch(selectedTabProvider);
     return Scaffold(
       appBar: AppBar(
-        title: Text(_tab == 0 ? 'Dashboard' : (_tab == 1 ? 'Transaksi' : 'Pengaturan')),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (tab == 0) const Text('Halo, Bima', style: AppText.greeting),
+            Text(_titles[tab]!, style: AppText.screenTitle),
+          ],
+        ),
+        actions: [
+          if (tab == 0)
+            const Padding(
+              padding: EdgeInsets.only(right: 20),
+              child: _OfflineBadge(),
+            ),
+        ],
       ),
-      body: _tab == 0
+      body: tab == 0
           ? const _DashboardTab()
-          : (_tab == 1 ? const _FeedTab() : const _SettingsTab()),
+          : (tab == 1 ? const _FeedTab() : const _SettingsTab()),
       floatingActionButton: FloatingActionButton(
-        onPressed: _openQuickCash,
+        onPressed: () => _openQuickCash(context),
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
+        selectedIndex: tab,
+        onDestinationSelected: (i) =>
+            ref.read(selectedTabProvider.notifier).state = i,
         destinations: const [
           NavigationDestination(icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
           NavigationDestination(icon: Icon(Icons.receipt_long_outlined), label: 'Transaksi'),
@@ -830,33 +1030,85 @@ class _DashboardTab extends ConsumerWidget {
         ref.invalidate(feedProvider);
       },
       child: ListView(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen, 0, AppSpacing.screen, 84),
         children: [
           const StatusBanner(),
+          const SizedBox(height: AppSpacing.gap),
+          const PeriodSelector(),
+          const SizedBox(height: AppSpacing.gap),
           const CashFlowCard(),
+          const SizedBox(height: AppSpacing.gap),
           const CategoryDonutChart(),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text('Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          ),
-          feed.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: CircularProgressIndicator()),
-            ),
-            error: (e, _) => ErrorState(
-              message: 'Gagal memuat transaksi: $e',
-              onRetry: () => ref.invalidate(feedProvider),
-            ),
-            data: (items) => items.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: EmptyState(
-                      icon: Icons.add_circle_outline,
-                      message:
-                          'Belum ada transaksi di periode ini.\nTap + untuk catat pengeluaran tunai.',
+          const SizedBox(height: AppSpacing.gap),
+          // Kartu "Transaksi Terbaru" + tautan "Lihat Semua" (mockup).
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.card),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Transaksi Terbaru', style: AppText.sectionTitle),
+                      TextButton(
+                        onPressed: () =>
+                            ref.read(selectedTabProvider.notifier).state = 1,
+                        style: TextButton.styleFrom(
+                          minimumSize: const Size(48, 48),
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                        ),
+                        child: const Text(
+                          'Lihat Semua',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  feed.when(
+                    loading: () => const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(child: CircularProgressIndicator()),
                     ),
-                  )
-                : Column(children: items.take(5).map((t) => TransactionTile(tx: t)).toList()),
+                    error: (e, _) => ErrorState(
+                      message: 'Gagal memuat transaksi: $e',
+                      onRetry: () => ref.invalidate(feedProvider),
+                    ),
+                    data: (items) => items.isEmpty
+                        ? const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: EmptyState(
+                              icon: Icons.add_circle_outline,
+                              message:
+                                  'Belum ada transaksi di periode ini.\nTap + untuk catat pengeluaran tunai.',
+                            ),
+                          )
+                        : Column(
+                            children: [
+                              for (final t in items.take(5))
+                                TransactionRow(
+                                  tx: t,
+                                  categoryName: ref
+                                      .watch(categoryNameMapProvider)
+                                      .value?[t.categoryId],
+                                  onTap: () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) =>
+                                          TransactionDetailScreen(tx: t),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),

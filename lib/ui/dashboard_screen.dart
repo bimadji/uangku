@@ -421,40 +421,50 @@ class TransactionRow extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 3),
-                Row(
+                // Wrap (bukan Row) agar badge/chip/catatan turun baris
+                // alih-alih meluber di layar sempit.
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     SourceBadge(source: tx.source),
-                    const SizedBox(width: 6),
                     ModeChip(origin: tx.origin),
-                    if (tx.note != null) ...[
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          tx.note!,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppText.caption,
-                        ),
+                    if (tx.note != null)
+                      Text(
+                        tx.note!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.caption,
                       ),
-                    ],
                   ],
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TabularNumber(
-                text: '${isExpense ? '-' : '+'} ${formatRp(tx.amount)}',
-                style: AppText.txAmount.copyWith(color: color),
-              ),
-              if (categoryName != null) ...[
-                const SizedBox(height: 2),
-                Text(categoryName!, style: AppText.caption),
+          // Kolom kanan dibatasi agar nominal + kategori tidak mendorong
+          // baris melebihi lebar layar sempit.
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TabularNumber(
+                  text: '${isExpense ? '-' : '+'} ${formatRp(tx.amount)}',
+                  style: AppText.txAmount.copyWith(color: color),
+                ),
+                if (categoryName != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    categoryName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.caption,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ],
       ),
@@ -515,8 +525,8 @@ class CategoryDonutChart extends ConsumerWidget {
                 return Row(
                   children: [
                     SizedBox(
-                      width: 100,
-                      height: 100,
+                      width: 84,
+                      height: 84,
                       child: PieChart(
                         PieChartData(
                           sectionsSpace: 2,
@@ -564,11 +574,14 @@ class CategoryDonutChart extends ConsumerWidget {
                                       fontWeight: FontWeight.bold),
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
-                                  formatRp(items[i].total),
-                                  style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey.shade600),
+                                Flexible(
+                                  child: Text(
+                                    formatRp(items[i].total),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                        fontSize: 10, color: AppColors.muted),
+                                  ),
                                 ),
                               ],
                             ),
@@ -729,100 +742,183 @@ class _TransactionDetailScreenState
     if (mounted) Navigator.of(context).pop();
   }
 
+  /// Chip kategori bergaya pill mockup (bukan ChoiceChip Material).
+  Widget _categoryChip(Category c) {
+    final active = _categoryId == c.id;
+    return GestureDetector(
+      onTap: () => setState(() => _categoryId = c.id),
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active ? AppColors.accent : AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+          border: Border.all(
+            color: active ? AppColors.accent : AppColors.border,
+          ),
+        ),
+        child: Text(
+          c.name,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: active ? Colors.white : AppColors.fg,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final categories = ref.watch(categoryListProvider);
     final date = DateTime.fromMillisecondsSinceEpoch(widget.tx.occurredAt);
     final dateStr =
-        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} '
+        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Detail Transaksi'),
+        leading: TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            'Batal',
+            style: TextStyle(fontSize: 13, color: AppColors.accent),
+          ),
+        ),
+        leadingWidth: 72,
+        title: const Text('Detail Transaksi', style: AppText.screenTitle),
+        centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
+          TextButton(
             onPressed: _saving ? null : _delete,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(48, 48),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(fontSize: 13, color: AppColors.expense),
+            ),
           ),
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.screen, 8, AppSpacing.screen, 24),
         children: [
+          // Ringkasan sumber & waktu (read-only)
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(AppSpacing.card),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Expanded(
+                    child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SourceBadge(source: widget.tx.source),
-                      const SizedBox(width: 8),
-                      ModeChip(origin: widget.tx.origin),
+                      const Text('SUMBER DANA', style: AppText.badge),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          SourceBadge(source: widget.tx.source),
+                          ModeChip(origin: widget.tx.origin),
+                        ],
+                      ),
                     ],
                   ),
-                  Text(dateStr,
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade600)),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('WAKTU', style: AppText.badge),
+                      const SizedBox(height: 4),
+                      Text(dateStr, style: AppText.caption),
+                    ],
+                  ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _amountController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Nominal (Rp)',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _merchantController,
-            decoration: const InputDecoration(
-              labelText: 'Merchant / Keterangan',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _noteController,
-            decoration: const InputDecoration(
-              labelText: 'Catatan Pribadi',
-              border: OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text('Kategori:',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          categories.maybeWhen(
-            data: (cats) => Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final c in cats
-                    .where((c) => c.kind.name == widget.tx.type.name))
-                  ChoiceChip(
-                    label: Text(c.name),
-                    selected: _categoryId == c.id,
-                    onSelected: (_) => setState(() => _categoryId = c.id),
+          const SizedBox(height: AppSpacing.gap),
+
+          // Form edit
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.card),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text('NOMINAL (RUPIAH)', style: AppText.formLabel),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _amountController,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Nominal',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-              ],
+                  const SizedBox(height: 12),
+                  const Text('MERCHANT / KETERANGAN', style: AppText.formLabel),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _merchantController,
+                    decoration: const InputDecoration(
+                      labelText: 'Merchant / Keterangan',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('KATEGORI (TAP UNTUK UBAH)',
+                      style: AppText.formLabel),
+                  const SizedBox(height: 8),
+                  categories.maybeWhen(
+                    data: (cats) => Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        for (final c in cats.where(
+                            (c) => c.kind.name == widget.tx.type.name))
+                          _categoryChip(c),
+                      ],
+                    ),
+                    orElse: () => const SizedBox.shrink(),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('CATATAN PRIBADI (OPSIONAL)',
+                      style: AppText.formLabel),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: _noteController,
+                    decoration: const InputDecoration(
+                      labelText: 'Catatan pribadi',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: _saving ? null : _save,
+                    child: _saving
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text('Simpan Perubahan'),
+                  ),
+                ],
+              ),
             ),
-            orElse: () => const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 24),
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Simpan Perubahan'),
           ),
         ],
       ),
@@ -988,12 +1084,18 @@ class _QuickCashSheetState extends ConsumerState<QuickCashSheet> {
         children: [
           // Header sheet (mockup)
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                _type == TxType.expense ? 'Catat Tunai Cepat' : 'Catat Pemasukan',
-                style: AppText.sectionTitle,
+              Expanded(
+                child: Text(
+                  _type == TxType.expense
+                      ? 'Catat Tunai Cepat'
+                      : 'Catat Pemasukan',
+                  style: AppText.sectionTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
+              const SizedBox(width: 8),
               const Text('< 5 Detik', style: AppText.caption),
             ],
           ),
@@ -1186,9 +1288,13 @@ class _DashboardTab extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Transaksi Terbaru', style: AppText.sectionTitle),
+                      const Expanded(
+                        child: Text('Transaksi Terbaru',
+                            style: AppText.sectionTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis),
+                      ),
                       TextButton(
                         onPressed: () =>
                             ref.read(selectedTabProvider.notifier).state = 1,

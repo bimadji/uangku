@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uangku/data/database.dart';
 import 'package:uangku/services/parser_engine.dart';
 import 'package:uangku/ui/dashboard_screen.dart';
+import 'package:uangku/ui/app_theme.dart';
 import 'package:uangku/ui/states.dart';
 
 // ---- Providers ----
@@ -82,51 +83,83 @@ class ParserLogScreen extends ConsumerWidget {
           final ignored = items.where((l) => l.status == ParserLogStatus.ignored).length;
 
           return ListView(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screen, 8, AppSpacing.screen, 24),
             children: [
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
+              // Stat cards mockup: Parsed hijau, Failed merah, Ignored abu
+              Row(
+                children: [
+                  _statCard('PARSED', parsed, AppColors.income, AppColors.incomeBg),
+                  const SizedBox(width: 8),
+                  _statCard('FAILED', failed, AppColors.expense, AppColors.expenseBg),
+                  const SizedBox(width: 8),
+                  _statCard('IGNORED', ignored, AppColors.muted, AppColors.surfaceSubtle),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.gap),
+              Card(
+                child: Column(
                   children: [
-                    _stat('Parsed', parsed, Colors.green),
-                    _stat('Failed', failed, Colors.red),
-                    _stat('Ignored', ignored, Colors.grey),
+                    for (final log in items)
+                      InkWell(
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => RuleTestScreen(
+                              prefill: log.body.isEmpty ? log.title : log.body,
+                            ),
+                          ),
+                        ),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.card, vertical: 10),
+                          decoration: const BoxDecoration(
+                            border: Border(
+                                bottom: BorderSide(color: AppColors.borderSoft)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(log.packageName,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppText.caption),
+                                        ),
+                                        _statusBadge(log.status),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      log.body.isEmpty ? log.title : log.body,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          fontFamily: 'monospace',
+                                          color: AppColors.fg),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${_fmt(log.postedAt)}'
+                                      '${log.error == null ? '' : ' · ${log.error}'}',
+                                      style: AppText.caption,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
-              for (final log in items)
-                ListTile(
-                  dense: true,
-                  leading: Icon(
-                    switch (log.status) {
-                      ParserLogStatus.parsed => Icons.check_circle_outline,
-                      ParserLogStatus.failed => Icons.error_outline,
-                      ParserLogStatus.ignored => Icons.remove_circle_outline,
-                    },
-                    color: switch (log.status) {
-                      ParserLogStatus.parsed => Colors.green,
-                      ParserLogStatus.failed => Colors.red,
-                      ParserLogStatus.ignored => Colors.grey,
-                    },
-                  ),
-                  title: Text(
-                    log.body.isEmpty ? log.title : log.body,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-                  ),
-                  subtitle: Text(
-                    '${log.packageName} · ${_fmt(log.postedAt)}'
-                    '${log.error == null ? '' : ' · ${log.error}'}',
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => RuleTestScreen(
-                        prefill: log.body.isEmpty ? log.title : log.body,
-                      ),
-                    ),
-                  ),
-                ),
             ],
           );
         },
@@ -140,16 +173,62 @@ class ParserLogScreen extends ConsumerWidget {
         '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
   }
 
-  Widget _stat(String label, int value, Color color) => Expanded(
-        child: Column(
-          children: [
-            Text('$value',
+  Widget _statCard(String label, int value, Color fg, Color bg) => Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Column(
+            children: [
+              TabularNumber(
+                text: '$value',
                 style: TextStyle(
-                    fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-            Text(label, style: const TextStyle(fontSize: 11)),
-          ],
+                    fontSize: 20, fontWeight: FontWeight.w800, color: fg),
+              ),
+              const SizedBox(height: 2),
+              Text(label, style: AppText.badge),
+            ],
+          ),
         ),
       );
+
+  /// Badge status pill (mockup: parsed hijau, failed merah, ignored abu).
+  Widget _statusBadge(ParserLogStatus status) {
+    final (bg, border, fg, label) = switch (status) {
+      ParserLogStatus.parsed => (
+          AppColors.incomeBg,
+          AppColors.incomeBorder,
+          AppColors.incomeText,
+          'parsed'
+        ),
+      ParserLogStatus.failed => (
+          AppColors.expenseBg,
+          AppColors.expenseBorder,
+          AppColors.expenseText,
+          'failed'
+        ),
+      ParserLogStatus.ignored => (
+          AppColors.surfaceSubtle,
+          AppColors.border,
+          AppColors.muted,
+          'ignored'
+        ),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: border),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 9, fontWeight: FontWeight.w700, color: fg)),
+    );
+  }
 }
 
 // ---- Layar Uji Rule Parser (AFD §6, FR-10) ----

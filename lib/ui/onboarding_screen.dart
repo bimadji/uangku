@@ -35,6 +35,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _finish() {
+    // Listener butuh proses yang hidup — nyalakan penjaganya (T-037a).
+    PlatformBridge.startKeepAlive();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const MainScreen()),
     );

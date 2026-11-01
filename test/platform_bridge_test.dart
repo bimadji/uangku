@@ -16,8 +16,10 @@ void main() {
             return true;
           case 'openNotificationAccessSettings':
             return true;
-          case 'isBatteryOptimizationIgnored':
-            return false;
+          case 'startKeepAlive':
+            return true;
+          case 'isKeepAliveRunning':
+            return true;
           default:
             return null;
         }
@@ -45,6 +47,15 @@ void main() {
         () async {
       final ignored = await PlatformBridge.isBatteryOptimizationIgnored();
       expect(ignored, isFalse);
+    });
+
+    test('startKeepAlive memanggil method channel tanpa throw', () async {
+      await expectLater(PlatformBridge.startKeepAlive(), completes);
+    });
+
+    test('isKeepAliveRunning mengembalikan status boolean', () async {
+      final running = await PlatformBridge.isKeepAliveRunning();
+      expect(running, isTrue);
     });
 
     test('RawNotification.fromMap memetakan snake_case dan fallback aman', () {

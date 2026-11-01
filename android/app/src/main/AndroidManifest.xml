@@ -1,6 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Izin menampilkan notifikasi interaktif Uangku (FR-05) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Foreground service penjaga listener (T-037a): wajib di Android 13+ -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <!-- Tipe dataSync wajib dideklarasikan di Android 14+ -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Hidupkan kembali penjaga listener setelah reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <application
         android:label="Uangku"
         android:name="${applicationName}"
@@ -68,6 +74,21 @@
                 <action android:name="android.service.quicksettings.action.QS_TILE" />
             </intent-filter>
         </service>
+
+        <!-- Foreground service penjaga proses (priority proses, T-037a) -->
+        <service
+            android:name=".UangkuKeepAliveService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!-- Bangunkan penjaga listener setelah reboot -->
+        <receiver
+            android:name=".BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

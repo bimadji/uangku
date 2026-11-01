@@ -69,6 +69,8 @@ class _UangkuAppState extends ConsumerState<UangkuApp>
     // Listener hanya menerima event saat engine hidup (lihat backlog T-011).
     widget.ingest.start(PlatformBridge.notificationStream);
     widget.ingest.localNotif.onAction = _handleNotifAction;
+    // Jaga proses tetap hidup agar binding listener tidak dilepas MIUI.
+    PlatformBridge.startKeepAlive();
     WidgetsBinding.instance.addObserver(this);
     WidgetBridge.clicks.listen(_handleWidgetClick);
     _refreshWidget();

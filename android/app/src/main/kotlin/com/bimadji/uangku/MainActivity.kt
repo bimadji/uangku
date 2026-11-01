@@ -54,6 +54,17 @@ class MainActivity : FlutterActivity() {
                     val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
                     result.success(pm.isIgnoringBatteryOptimizations(packageName))
                 }
+                "startKeepAlive" -> {
+                    UangkuKeepAliveService.start(this)
+                    result.success(true)
+                }
+                "stopKeepAlive" -> {
+                    UangkuKeepAliveService.stop(this)
+                    result.success(true)
+                }
+                "isKeepAliveRunning" -> {
+                    result.success(UangkuKeepAliveService.isRunning(this))
+                }
                 "requestPostNotificationsPermission" -> {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         val granted = checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) ==

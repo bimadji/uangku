@@ -20,6 +20,7 @@ class MainActivity : FlutterActivity() {
         const val METHOD_CHANNEL = "uangku/platform"
         const val EVENT_CHANNEL = "uangku/notif_events"
         var eventSink: EventChannel.EventSink? = null
+        private var activityInstance: MainActivity? = null
 
         fun sendNotificationEvent(payload: Map<String, Any?>) {
             activityInstance?.runOnUiThread {

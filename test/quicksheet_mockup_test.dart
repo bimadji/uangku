@@ -102,4 +102,34 @@ void main() {
       expect(find.text('Rp 5000'), findsOneWidget);
     });
   });
+
+  group('T-036: Layout chip & FAB', () {
+    testWidgets('Chip kategori tersusun beberapa per baris (bukan 1 kolom penuh)',
+        (tester) async {
+      await openSheet(tester);
+
+      final food = tester.getTopLeft(find.text('Makanan & Minuman'));
+      final transport = tester.getTopLeft(find.text('Transportasi'));
+
+      // Dua chip pertama harus berbagi baris yang sama (Y sama) → wrap benar.
+      expect((food.dy - transport.dy).abs(), lessThan(4),
+          reason: 'Chip harus wrap ke samping, bukan satu per baris');
+      expect(transport.dx, greaterThan(food.dx),
+          reason: 'Chip kedua berada di kanan chip pertama');
+    });
+
+    testWidgets('Lebar chip kategori tidak memenuhi seluruh layar', (tester) async {
+      await openSheet(tester);
+
+      final box = find.ancestor(
+        of: find.text('Makanan & Minuman'),
+        matching: find.byType(Container),
+      );
+      final width = tester.getSize(box.first).width;
+      final screenWidth = tester.view.physicalSize.width / tester.view.devicePixelRatio;
+
+      expect(width, lessThan(screenWidth * 0.75),
+          reason: 'Chip tidak boleh selebar layar');
+    });
+  });
 }

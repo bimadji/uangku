@@ -60,6 +60,32 @@ Aturan:
 4. Di laporan terminal akhir tugas, tambahkan satu bagian **"Dilewati dan risiko"** yang meringkas entri baru, supaya pengguna tahu tanpa membuka file.
 5. Jangan memasukkan hal yang sebenarnya bagian dari scope tugas dan belum selesai; itu berarti tugasnya belum selesai, bukan backlog.
 
+### 1.4 Catatan Bug (`docs/BUG-LOG.md`)
+Catat SEMUA bug yang ditemukan selama pengembangan ke `docs/BUG-LOG.md` (buat file jika belum ada). Yang dihitung bug: test yang gagal karena kode (bukan karena test salah), crash, perilaku yang menyimpang dari requirement/mockup, regresi, bug yang ketahuan saat review atau saat pengguna melaporkan hasil uji di HP, kegagalan CI yang berasal dari kode, dan salah paham pada asumsi (mis. format notifikasi yang ternyata berbeda). Bug kecil tetap dicatat. Kesalahan ketik yang langsung terlihat saat menulis dan diperbaiki sebelum commit tidak perlu.
+
+Format tiap entri (urut dari yang terbaru di atas):
+
+```
+## BUG-001: judul singkat
+- Status: Terbuka / Diperbaiki di T-xxx (PR #n) / Ditunda (lihat BACKLOG-FUTURE.md)
+- Ditemukan: kapan, saat tugas apa, dan bagaimana (test mana yang gagal, laporan pengguna, review, dll).
+- Gejala: apa yang terlihat/terjadi, dan langkah untuk memunculkannya.
+- Penyebab: akar masalah sebenarnya, bukan gejala. Jelaskan kenapa bisa terjadi.
+- Lokasi kode: path file dan nama fungsi/kelas (sertakan nomor baris atau commit bila membantu).
+- Dampak: akibat bagi pengguna/data, tingkat keparahan, apakah ada data yang sudah salah dan perlu dibersihkan.
+- Perbaikan: apa persisnya yang diubah dan kenapa itu menyelesaikan akar masalah.
+- Pencegahan: test yang ditambahkan (sebut namanya), atau alasan bila tidak bisa diuji otomatis.
+```
+
+Aturan:
+1. **Penyebab harus terverifikasi** (direproduksi, atau dibuktikan dengan test/log). Kalau belum yakin, tulis "dugaan" secara eksplisit dan jelaskan cara membuktikannya. Jangan mengarang penyebab agar entri tampak lengkap.
+2. **Jujur dan lengkap**: jangan menyaring bug yang membuat hasil kerja tampak kurang baik, termasuk bug yang dibuat sendiri. Jangan menyalahkan test, lingkungan, atau perangkat tanpa bukti.
+3. **Jangan memperbaiki bug dengan melemahkan atau menghapus test.** Perbaiki akar masalahnya.
+4. **Catat saat bug ditemukan**, bukan menunggu akhir tugas. Perbarui statusnya saat diperbaiki.
+5. Kalau perbaikan menyentuh kode di luar scope tugas yang sedang berjalan, sebutkan di laporan terminal dan pisahkan menjadi PR/tugas sendiri bila besar.
+6. Bug yang berasal dari asumsi dokumen (PRD/TRD/BSD/AFD/DBD) yang keliru: catat juga dokumen mana yang perlu dikoreksi, dan **tanyakan pengguna sebelum mengubah dokumen itu**.
+7. **Perbarui file ini di PR yang sama** dengan tugas/perbaikannya. Di laporan terminal akhir tugas tambahkan bagian **"Bug ditemukan"** berisi ID dan satu baris ringkasan per bug (atau "Tidak ada").
+
 ## 2. Branch Protection (diaktifkan di T-001 via `gh api`)
 
 Rencana langkah (dijalankan setelah workflow CI ada dan pernah hijau minimal sekali):

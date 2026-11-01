@@ -4,10 +4,10 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:home_widget/home_widget.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:uangku/data/database.dart';
-import 'package:uangku/data/transaction_repository.dart' show Period;
 import 'package:uangku/services/categorizer_service.dart';
 import 'package:uangku/services/dedup_service.dart';
 import 'package:uangku/services/local_notif_service.dart';
@@ -15,6 +15,7 @@ import 'package:uangku/services/notif_ingest_service.dart';
 import 'package:uangku/services/parser_engine.dart';
 import 'package:uangku/services/platform_bridge.dart';
 import 'package:uangku/services/widget_bridge.dart';
+import 'package:uangku/services/widget_sync.dart';
 import 'package:uangku/ui/app_theme.dart';
 import 'package:uangku/ui/dashboard_screen.dart';
 import 'package:uangku/ui/onboarding_screen.dart';
@@ -59,7 +60,8 @@ class UangkuApp extends ConsumerStatefulWidget {
   ConsumerState<UangkuApp> createState() => _UangkuAppState();
 }
 
-class _UangkuAppState extends ConsumerState<UangkuApp> {
+class _UangkuAppState extends ConsumerState<UangkuApp>
+    with WidgetsBindingObserver {
   final _navigatorKey = GlobalKey<NavigatorState>();
   @override
   void initState() {
@@ -67,15 +69,34 @@ class _UangkuAppState extends ConsumerState<UangkuApp> {
     // Listener hanya menerima event saat engine hidup (lihat backlog T-011).
     widget.ingest.start(PlatformBridge.notificationStream);
     widget.ingest.localNotif.onAction = _handleNotifAction;
+    WidgetsBinding.instance.addObserver(this);
     WidgetBridge.clicks.listen(_handleWidgetClick);
     _refreshWidget();
+    _handleColdStartIntent();
   }
 
   /// Widget home screen menampilkan pengeluaran hari ini (DBD §7).
   Future<void> _refreshWidget() async {
-    final repo = ref.read(repositoryProvider);
-    final flow = await repo.cashFlow(Period.day);
-    await WidgetBridge.updateExpenseToday(flow.expense);
+    final db = ref.read(databaseProvider);
+    await syncWidget(db);
+  }
+
+  /// Status izin berubah di luar aplikasi (mis. user mencabut Notification
+  /// Access di Setelan Android). Segarkan saat app kembali aktif (R-04).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    ref.invalidate(listenerStatusProvider);
+    ref.invalidate(batteryStatusProvider);
+    _refreshWidget();
+  }
+
+  /// App dibuka lewat widget/tile "+" saat masih mati (cold start).
+  Future<void> _handleColdStartIntent() async {
+    final uri = await HomeWidget.initiallyLaunchedFromHomeWidget();
+    if (uri?.toString() != WidgetBridge.quickCashUri) return;
+    if (!mounted) return;
+    _openQuickCash();
   }
 
   /// Widget / tile diklik → buka QuickCashSheet.
@@ -107,6 +128,7 @@ class _UangkuAppState extends ConsumerState<UangkuApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     widget.ingest.stop();
     super.dispose();
   }

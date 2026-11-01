@@ -3,6 +3,7 @@
 import 'package:drift/drift.dart' show Value;
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uangku/data/database.dart';
@@ -14,7 +15,13 @@ void main() {
   late TransactionRepository repo;
   late int catFood;
 
+  const homeWidgetChannel = MethodChannel('home_widget');
+
   setUp(() async {
+    // syncWidget memanggil method channel home_widget setelah transaksi
+    // berubah (T-035) — stub agar tidak throw di widget test.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(homeWidgetChannel, (_) async => true);
     db = AppDatabase(NativeDatabase.memory());
     await db.seedCategories();
     repo = TransactionRepository(db);
@@ -22,7 +29,11 @@ void main() {
     catFood = cats.firstWhere((c) => c.name == 'Makanan & Minuman').id;
   });
 
-  tearDown(() => db.close());
+  tearDown(() async {
+    await db.close();
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(homeWidgetChannel, null);
+  });
 
   Future<void> pumpApp(WidgetTester tester) async {
     // Viewport uji default 800x600 terlalu pendek untuk layar HP nyata;

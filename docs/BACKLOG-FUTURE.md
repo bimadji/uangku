@@ -205,3 +205,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - 6 layar/tab telah diselaraskan: Dashboard, Transaksi, Pengaturan, QuickCashSheet, Detail/Koreksi, Log Parser.
 - Total test suite naik dari 109 (sebelum T-029) menjadi 141, seluruhnya hijau.
 - Belum diverifikasi secara visual di perangkat — butuh screenshot baru ke `docs/realTest/after` untuk perbandingan akhir.
+
+## T-035: Kesegaran data widget & status listener (M6.7)
+- Dilewati: Widget tetap **tidak diperbarui saat tidak ada aktivitas app** (mis. transaksi masuk ketika app tertutup) — `syncWidget()` hanya jalan ketika proses Dart hidup, jadi angka widget masih bisa basi sampai app dibuka. Refresh terjadwal (`HomeWidget.scheduleWidgetUpdates`) belum dipakai dan `updatePeriodMillis` masih 24 jam. Observer lifecycle hanya menangani `resumed`; perubahan izin saat app di background lalu dibunuh tidak terdeteksi sampai dibuka lagi.
+- Risiko: Setelah ponsel dipakai tanpa membuka app seharian, widget bisa menampilkan pengeluaran kemarin tanpa penanda "terakhir diperbarui".
+- Associated: `lib/services/widget_sync.dart` (baru), `lib/main.dart`, `lib/ui/dashboard_screen.dart`, `lib/services/notif_ingest_service.dart`, DBD §7, R-04.
+- Saran: Tambahkan label waktu update di layout widget, atau refresh terjadwal; bergantung pada keputusan apakah background isolate (T-011 backlog) akan dipasang.

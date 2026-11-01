@@ -527,3 +527,20 @@ Tidak ada keputusan diam-diam: jika spike melebihi batas waktu, ambil pilihan ya
 - **Eksklusi**: **tanpa panel "Teks notifikasi asli"** di Detail/Koreksi — data raw text ada di `parser_logs` tetapi belum ada relasi transaksi↔log (butuh kolom `rule_id`/FK baru = perubahan skema, di luar scope UI) → dicatat di backlog.
 - **Kriteria sukses**: widget test memeriksa stat card log, badge status, dan label tombol Detail.
 - **Ukuran**: M.
+
+#### T-035 — Kesegaran data: widget & status listener (M6.7)
+- **Branch**: `feat/t-035-ui-freshness`
+- **Dep**: T-023, T-030, T-032
+- **Cover**: DBD §7; R-04.
+- **Perubahan**: helper `syncWidget()` dipanggil setiap kali transaksi berubah (simpan QuickCashSheet, simpan/hapus Detail, transaksi otomatis dari listener) — sebelumnya widget hanya diperbarui saat app dibuka sehingga menampilkan angka basi; `WidgetsBindingObserver` me-refresh status listener & whitelist baterai saat app kembali aktif (user mengubah izin di Setelan Android); `initiallyLaunchedFromHomeWidget()` ditangani agar app yang dibuka dari widget/tile "+" saat masih mati langsung membuka QuickCashSheet.
+- **Eksklusi**: tanpa refresh terjadwal widget (masih 24 jam bawaan Android); tanpa background isolate.
+- **Kriteria sukses**: unit test `syncWidget` mengirim total hari ini (bukan kemarin), dan widget test lama tetap hijau.
+- **Ukuran**: S.
+
+#### T-036 — Kandidat berikutnya: query & performa (belum dikerjakan)
+- **Perubahan**: `trimLogs()` diganti `DELETE ... WHERE id NOT IN (SELECT ... LIMIT 200)` (sekarang memuat semua baris ke memori); filter sumber feed dipindah ke SQL `WHERE source = ?` (sekarang memfilter di memori setelah 100 baris pertama sehingga transaksi ke-101+ tidak pernah muncul di filter).
+- **Ukuran**: S. **Butuh**: keputusan pengguna apakah dikerjakan sekarang.
+
+#### T-037 — Kandidat berikutnya: aksesibilitas lanjutan (belum dikerjakan)
+- **Perubahan**: label semantik untuk `TransactionRow` (sumber + kategori + nominal dalam satu pengumuman), `CashFlowCard`, dan legend chart; skeleton loading menggantikan spinner.
+- **Ukuran**: S. **Butuh**: keputusan pengguna.

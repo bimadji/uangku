@@ -29,10 +29,12 @@
 | Kolom | Tipe | Constraint |
 |-------|------|------------|
 | `id` | INTEGER | PK, autoincrement |
-| `name` | TEXT | NOT NULL UNIQUE |
+| `name` | TEXT | NOT NULL |
 | `kind` | TEXT | NOT NULL CHECK IN (`income`,`expense`) |
 | `sort_order` | INTEGER | NOT NULL |
 | `keywords` | TEXT | NULL — JSON array keyword/merchant untuk auto-kategorisasi (FR-04), editable in-app fase lanjutan. |
+
+Constraint unik: **`UNIQUE(name, kind)`** — bukan `UNIQUE(name)` saja, karena "Lainnya" wajib ada di kedua jenis transaksi (expense & income) sesuai seed FR-11 di bawah. (Dikoreksi 2026-11-01, lihat `docs/BUG-LOG.md` BUG-012.)
 
 Seed sesuai FR-11:
 - `expense`: Makanan & Minuman, Transportasi, Kos & Tagihan, Belanja, Hiburan, Kesehatan, Pendidikan, Lainnya.

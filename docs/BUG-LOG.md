@@ -1,6 +1,7 @@
 # Catatan Bug (BUG LOG)
 
-Semua bug yang ditemukan selama pengembangan Uangku. Urutan: terbaru di atas.
+Semua bug yang ditemukan selama pengembangan Uangku. Entri disusun **terbaru di atas**.
+ID (BUG-xxx) bersifat tetap dan tidak menandakan urutan waktu — dipakai sebagai rujukan.
 Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 
 ---
@@ -116,7 +117,7 @@ Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 - Pencegahan: Job `build-apk-debug` di CI (`.github/workflows/ci.yml`) gagal bila regresi ini kembali.
 
 ## BUG-012: Seed kategori gagal karena `UNIQUE(name)` menolak "Lainnya" ganda
-- Status: Diperbaiki di T-006 (PR #5). **Dokumen perlu koreksi** — lihat catatan.
+- Status: Diperbaiki di T-006 (PR #5); dokumen `docs/05-BSD.md` §1.2 dikoreksi 2026-11-01 (PR #37).
 - Ditemukan: 2026-10-30, saat T-006; test `test/database_test.dart` → "seed awal menghasilkan 12 kategori persis" gagal (`SqliteException: UNIQUE constraint failed: categories.name`).
 - Gejala: Hanya 11 dari 12 kategori yang tersimpan; seed kedua tidak menambah "Lainnya" untuk jenis pemasukan.
 - Penyebab: Skema memakai `UNIQUE(name)` (mengikuti `docs/05-BSD.md` §1.2 yang menulis `name TEXT NOT NULL UNIQUE`), sementara daftar FR-11 memuat "Lainnya" untuk **kedua** jenis transaksi (pengeluaran dan pemasukan). Constraint yang benar adalah pasangan `(name, kind)`.
@@ -124,7 +125,7 @@ Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 - Dampak: Kategori "Lainnya" untuk pemasukan tidak ada → kategorisasi pemasukan jatuh ke fallback yang salah. Data lama: tidak ada (DB baru).
 - Perbaikan: Constraint diubah menjadi `uniqueKeys => [{name, kind}]`; lookup seed memakai `name` **dan** `kind`.
 - Pencegahan: `test/database_test.dart` — "seed awal menghasilkan 12 kategori persis" + "idempotent: 2x seed tetap 12 baris".
-- Catatan dokumen: `docs/05-BSD.md` §1.2 masih menulis `UNIQUE` pada `name` saja. **Perlu keputusan pengguna** sebelum dokumen diubah menjadi `UNIQUE(name, kind)`.
+- Catatan dokumen: `docs/05-BSD.md` §1.2 semula menulis `UNIQUE` pada `name` saja. **Dikoreksi 2026-11-01 setelah disetujui pengguna**: kolom `name` kini `NOT NULL` tanpa UNIQUE, dan ditambahkan catatan eksplisit `UNIQUE(name, kind)` beserta alasannya.
 
 ## BUG-013: Build gagal karena signature `EventChannel.StreamHandler` salah
 - Status: Diperbaiki di T-011 (PR #12, commit `a45057f`)

@@ -60,6 +60,13 @@ final listenerStatusProvider = FutureProvider<bool>((ref) async {
   return PlatformBridge.isListenerEnabled();
 });
 
+/// Status binding listener yang sebenarnya (T-037a): `true` berarti service
+/// terhubung ke OS, bukan sekadar izin terdaftar. `false`/error berarti
+/// perlu aksi pengguna di Setelan (toggle Notification Access).
+final listenerConnectedProvider = FutureProvider<bool>((ref) async {
+  return PlatformBridge.isListenerConnected();
+});
+
 final batteryStatusProvider = FutureProvider<bool>((ref) async {
   return PlatformBridge.isBatteryOptimizationIgnored();
 });
@@ -80,6 +87,7 @@ class StatusBanner extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final listener = ref.watch(listenerStatusProvider);
     final battery = ref.watch(batteryStatusProvider);
+    final connected = ref.watch(listenerConnectedProvider);
 
     return listener.when(
       loading: () => const SizedBox.shrink(),
@@ -89,7 +97,11 @@ class StatusBanner extends ConsumerWidget {
           AsyncData(:final value) => value,
           _ => false,
         };
-        if (listenerEnabled && batteryOk) {
+        final isConnected = switch (connected) {
+          AsyncData(:final value) => value,
+          _ => listenerEnabled, // belum diketahui → asumsikan ikut status izin
+        };
+        if (listenerEnabled && isConnected && batteryOk) {
           // Semua izin lengkap → banner hijau singkat sebagai affirmation
           return Container(
             margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -117,21 +129,31 @@ class StatusBanner extends ConsumerWidget {
           );
         }
 
-        // Ada izin yang belum lengkap → banner peringatan
-        final (bg, border, fg, icon, message) = listenerEnabled
+        // Ada izin yang belum lengkap ATAU binding putus → banner peringatan.
+        // Izin ada tapi tidak terhubung = kasus MIUI mematikan service (BUG-003):
+        // satu-satunya pemulihan adalah toggle manual di Setelan.
+        final (bg, border, fg, icon, message) = !listenerEnabled
             ? (
-                const Color(0xFFFEF3C7),
-                const Color(0xFFFCD34D),
-                const Color(0xFF78350F),
-                Icons.warning_amber_rounded,
-                'Optimasi baterai belum diaktifkan — listener bisa dimatikan OS',
-              )
-            : (
                 const Color(0xFFFEE2E2),
                 const Color(0xFFFCA5A5),
                 const Color(0xFF7F1D1D),
                 Icons.error_outline,
                 'Akses notifikasi belum aktif — transaksi digital tidak tercatat otomatis',
+              )
+            : !isConnected
+                ? (
+                    const Color(0xFFFEE2E2),
+                    const Color(0xFFFCA5A5),
+                    const Color(0xFF7F1D1D),
+                    Icons.error_outline,
+                    'Listener terputus oleh sistem — ketuk Perbaiki, matikan lalu nyalakan lagi izin Uangku',
+                  )
+                : (
+                const Color(0xFFFEF3C7),
+                const Color(0xFFFCD34D),
+                const Color(0xFF78350F),
+                Icons.warning_amber_rounded,
+                'Optimasi baterai belum diaktifkan — listener bisa dimatikan OS',
               );
 
         return Container(

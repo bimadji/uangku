@@ -234,3 +234,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Notifikasi persisten "Uangku aktif" selalu tampil di tray (kewajiban teknis, tidak bisa disembunyikan). Bila MIUI mengabaikan START_STICKY/BOOT_COMPLETED, binding tetap putus dan pengguna harus toggle manual — tanpa itu transaksi tetap hilang.
 - Terkait: `UangkuKeepAliveService.kt`, `BootReceiver.kt`, `AndroidManifest.xml`, `MainActivity.kt` (`isListenerConnected`, event `listener_status`), `PlatformBridge`, `listenerConnectedProvider`, FR-01, NFR-04, R-04, BUG-003.
 - Saran: Uji reboot oleh pengguna (boot receiver). Bila foreground service pun tidak cukup, T-037b (headless isolate) tidak akan membantu masalah binding — yang dibutuhkan adalah deteksi (sudah ada) + fallback plugin T-004.
+
+## T-036: Navigasi Arsip Bulanan (M6.8)
+- Dilewati: Arsip hanya lewat panah ‹ › bulan-per-bulan — tidak ada lompat langsung ke bulan/tahun tertentu (month picker / dropdown). Tab Transaksi (feed) tidak mengikuti bulan terpilih (tetap kronologis semua, hanya preview Dashboard yang disaring). Tidak ada penanda visual "ini data bulan lama" selain judul kartu dan label navigator. Riwayat bulan hanya sejauh data tersedia; tidak ada empty state khusus arsip ("belum ada data bulan ini" memakai pesan umum).
+- Risiko: Pengguna dengan riwayat panjang harus mengetuk panah berkali-kali untuk mencapai bulan lama. Inkonsistensi: preview Dashboard disaring per bulan tetapi feed tab tidak.
+- Associated: `lib/ui/dashboard_screen.dart` (`monthOffsetProvider`, `viewedAnchor`, `MonthNavigator`, `_inMonth`), FR-08, FR-09.
+- Saran: Month picker masuk polish; filter feed tab per tanggal masuk T-022 lanjutan atau fase 2.

@@ -570,3 +570,12 @@ Tidak ada keputusan diam-diam: jika spike melebihi batas waktu, ambil pilihan ya
 #### T-037 — Kandidat berikutnya: aksesibilitas lanjutan (belum dikerjakan)
 - **Perubahan**: label semantik untuk `TransactionRow` (sumber + kategori + nominal dalam satu pengumuman), `CashFlowCard`, dan legend chart; skeleton loading menggantikan spinner.
 - **Ukuran**: S. **Butuh**: keputusan pengguna.
+
+#### T-036: Navigasi Arsip Bulanan (M6.8)
+- **Branch**: `feat/t-036-ui-month-nav`
+- **Dep**: T-021, T-030
+- **Cover**: FR-08 (rekap per periode), FR-09.
+- **Perubahan**: `monthOffsetProvider` + fungsi `viewedAnchor()`/`formatMonthYear()`; `cashFlow`/`expenseByCategory` memakai anchor bulan terpilih; widget `MonthNavigator` (panah ‹ › + label nama bulan, panah kanan disabled di bulan berjalan); label kartu dinamis ("Arus Kas · Oktober 2026"); label segmen Bulan menjadi nama bulan singkat saat arsip; preview "Transaksi Terbaru" disaring ke bulan terpilih; reset offset saat ganti jenis periode; clamp agar tidak melompat ke masa depan.
+- **Eksklusi**: tanpa pagination feed arsip (feed tab tetap kronologis semua); tanpa ekspor; tanpa kalender picker.
+- **Kriteria sukses**: cash flow + chart + preview mengikuti bulan lalu setelah navigasi; panah kanan disabled di bulan berjalan; mode Hari me-reset offset; 8 test widget/unit baru hijau.
+- **Ukuran**: S.

@@ -27,7 +27,28 @@ class MainActivity : FlutterActivity() {
             }
         }
 
-        private var activityInstance: MainActivity? = null
+        fun sendListenerStatus(connected: Boolean) {
+            activityInstance?.runOnUiThread {
+                eventSink?.success(
+                    mapOf("type" to "listener_status", "connected" to connected)
+                )
+            }
+        }
+
+        /** Diminta ulang dari mana pun (teruncak service). MIUI bisa mengabaikannya. */
+        fun requestListenerRebind() {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) return
+            try {
+                val ctx = activityInstance?.applicationContext ?: return
+                NotificationListenerService.requestRebind(
+                    android.content.ComponentName(
+                        ctx, UangkuNotificationListener::class.java
+                    )
+                )
+            } catch (_: Exception) {
+                // MIUI bisa mengabaikan — status tetap dilaporkan jujur.
+            }
+        }
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -53,6 +74,9 @@ class MainActivity : FlutterActivity() {
                 "isBatteryOptimizationIgnored" -> {
                     val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
                     result.success(pm.isIgnoringBatteryOptimizations(packageName))
+                }
+                "isListenerConnected" -> {
+                    result.success(UangkuNotificationListener.isBound)
                 }
                 "startKeepAlive" -> {
                     UangkuKeepAliveService.start(this)
@@ -97,16 +121,7 @@ class MainActivity : FlutterActivity() {
         )
     }
 
-    private fun requestListenerRebind() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            try {
-                val component = android.content.ComponentName(this, UangkuNotificationListener::class.java)
-                NotificationListenerService.requestRebind(component)
-            } catch (_: Exception) {
-                // Abaikan bila OS menolak
-            }
-        }
-    }
+    private fun requestListenerRebind() = Companion.requestListenerRebind()
 
     override fun onResume() {
         super.onResume()
@@ -127,10 +142,17 @@ class UangkuNotificationListener : NotificationListenerService() {
             "id.co.btn.mobilebanking.android",
             "com.gojek.gopay"
         )
+
+        /** Status binding terakhir. Dibaca MethodChannel agar Dart tahu apakah
+         * listener benar-benar terhubung, bukan sekadar izin terdaftar. */
+        @Volatile
+        var isBound: Boolean = false
     }
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        isBound = true
+        MainActivity.sendListenerStatus(true)
         // Catch-up: notifikasi yang tiba saat service mati masih ada di tray.
         // DedupService menolak yang sudah pernah tercatat, jadi aman.
         try {
@@ -138,6 +160,14 @@ class UangkuNotificationListener : NotificationListenerService() {
         } catch (_: Exception) {
             // activeNotifications bisa melempar bila service baru putus
         }
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        isBound = false
+        MainActivity.sendListenerStatus(false)
+        // Coba pulih otomatis; MIUI bisa mengabaikan — status tetap jujur.
+        MainActivity.requestListenerRebind()
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {

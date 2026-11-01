@@ -228,3 +228,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Dilewati: Seluruhnya — headless `DartExecutor`, entrypoint `@pragma('vm:entry-point')`, dan sinkronisasi 2-isolate.
 - Risiko: Tanpa ini, transaksi yang masuk saat proses Flutter mati tetap hilang.
 - Saran: Kerjakan hanya bila T-037a terbukti belum cukup, atau bila DoD M2 menuntut tanpa syarat.
+
+## T-037a: Foreground service penjaga listener (opsi A, tahap 1)
+- Dilewati: Service sudah dibuat (`UangkuKeepAliveService` + `BootReceiver` + izin FOREGROUND_SERVICE/RECEIVE_BOOT_COMPLETED) dan menyala, tetapi **belum terbukti mempertahankan binding di MIUI** — pengujian force-stop + relaunch menunjukkan listener tetap 0. Yang terbukti memulihkan hanya toggle izin manual. `requestRebind` dari kode tetap dipanggil (tidak merugikan), dan StatusBanner kini membedakan 3 keadaan: izin mati (merah), izin ON tapi binding putus (merah + instruksi toggle), dan semua OK (hijau).
+- Risiko: Notifikasi persisten "Uangku aktif" selalu tampil di tray (kewajiban teknis, tidak bisa disembunyikan). Bila MIUI mengabaikan START_STICKY/BOOT_COMPLETED, binding tetap putus dan pengguna harus toggle manual — tanpa itu transaksi tetap hilang.
+- Terkait: `UangkuKeepAliveService.kt`, `BootReceiver.kt`, `AndroidManifest.xml`, `MainActivity.kt` (`isListenerConnected`, event `listener_status`), `PlatformBridge`, `listenerConnectedProvider`, FR-01, NFR-04, R-04, BUG-003.
+- Saran: Uji reboot oleh pengguna (boot receiver). Bila foreground service pun tidak cukup, T-037b (headless isolate) tidak akan membantu masalah binding — yang dibutuhkan adalah deteksi (sudah ada) + fallback plugin T-004.

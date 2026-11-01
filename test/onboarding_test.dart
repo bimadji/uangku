@@ -12,7 +12,10 @@ void main() {
 
   const methodChannel = MethodChannel('uangku/platform');
 
+  var isBound = true;
+
   setUp(() {
+    isBound = true;
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(methodChannel, (MethodCall call) async {
       switch (call.method) {
@@ -24,6 +27,8 @@ void main() {
           return true;
         case 'openNotificationAccessSettings':
           return true;
+        case 'isListenerConnected':
+          return isBound;
         default:
           return null;
       }
@@ -83,6 +88,26 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Listener otomatis aktif (BTN & GoPay)'), findsOneWidget);
+    });
+
+    testWidgets('StatusBanner merah saat izin ada tapi binding putus (BUG-003)',
+        (tester) async {
+      isBound = false;
+      final db = AppDatabase(NativeDatabase.memory());
+      addTearDown(db.close);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [databaseProvider.overrideWithValue(db)],
+          child: const MaterialApp(home: MainScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Bukan hijau, bukan peringatan baterai — melainkan pesan putus.
+      expect(find.text('Listener otomatis aktif (BTN & GoPay)'), findsNothing);
+      expect(find.textContaining('Listener terputus oleh sistem'), findsOneWidget);
+      expect(find.text('Perbaiki'), findsWidgets);
     });
 
     testWidgets('Pengaturan menampilkan status AKTIF untuk listener & baterai',

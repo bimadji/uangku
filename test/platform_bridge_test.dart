@@ -14,6 +14,8 @@ void main() {
         switch (methodCall.method) {
           case 'isListenerEnabled':
             return true;
+          case 'isListenerConnected':
+            return false;
           case 'openNotificationAccessSettings':
             return true;
           case 'startKeepAlive':
@@ -35,6 +37,11 @@ void main() {
         () async {
       final enabled = await PlatformBridge.isListenerEnabled();
       expect(enabled, isTrue);
+    });
+
+    test('isListenerConnected mencerminkan binding nyata (bukan izin)', () async {
+      final connected = await PlatformBridge.isListenerConnected();
+      expect(connected, isFalse);
     });
 
     test('openNotificationAccessSettings memanggil method channel sukses',

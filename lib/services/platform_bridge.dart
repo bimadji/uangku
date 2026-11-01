@@ -80,10 +80,26 @@ class PlatformBridge {
     return result ?? false;
   }
 
+  /// Status binding listener yang sebenarnya (bukan sekadar izin terdaftar).
+  /// `true` = service terhubung ke OS; `false` = perlu aksi pengguna di Setelan.
+  static Future<bool> isListenerConnected() async {
+    final result =
+        await _platformChannel.invokeMethod<bool>('isListenerConnected');
+    return result ?? false;
+  }
+
   /// Stream notifikasi masuk secara real-time dari OS
   static Stream<RawNotification> get notificationStream {
     return _eventChannel
         .receiveBroadcastStream()
         .map((event) => RawNotification.fromMap(event as Map<dynamic, dynamic>));
+  }
+
+  /// Stream mentah event channel: payload notifikasi DAN event kontrol
+  /// (`{"type": "listener_status", "connected": bool}`).
+  static Stream<Map<dynamic, dynamic>> get rawEvents {
+    return _eventChannel
+        .receiveBroadcastStream()
+        .map((event) => event as Map<dynamic, dynamic>);
   }
 }

@@ -1,4 +1,5 @@
 import 'package:drift/native.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:uangku/data/database.dart';
@@ -27,6 +28,20 @@ class _FakeLocalNotif extends LocalNotifService {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  // syncWidget memanggil method channel home_widget setelah transaksi
+  // tersimpan (T-035) — beri handler palsu agar tidak throw di test.
+  const homeWidgetChannel = MethodChannel('home_widget');
+  setUpAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(homeWidgetChannel, (_) async => true);
+  });
+  tearDownAll(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(homeWidgetChannel, null);
+  });
+
   late AppDatabase db;
   late NotifIngestService ingest;
   late _FakeLocalNotif notif;

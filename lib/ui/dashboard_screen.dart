@@ -7,6 +7,7 @@ import 'package:drift/drift.dart' show Value;
 import 'package:uangku/data/database.dart';
 import 'package:uangku/data/transaction_repository.dart';
 import 'package:uangku/services/platform_bridge.dart';
+import 'package:uangku/services/widget_sync.dart';
 import 'package:uangku/ui/app_theme.dart';
 import 'package:uangku/ui/parser_log_screen.dart';
 import 'package:uangku/ui/states.dart';
@@ -709,6 +710,7 @@ class _TransactionDetailScreenState
 
     ref.invalidate(cashFlowProvider);
     ref.invalidate(feedProvider);
+    await syncWidget(db); // widget home screen ikut segar (DBD §7)
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -739,6 +741,7 @@ class _TransactionDetailScreenState
 
     ref.invalidate(cashFlowProvider);
     ref.invalidate(feedProvider);
+    await syncWidget(db);
     if (mounted) Navigator.of(context).pop();
   }
 
@@ -960,6 +963,7 @@ class _QuickCashSheetState extends ConsumerState<QuickCashSheet> {
 
     ref.invalidate(cashFlowProvider);
     ref.invalidate(feedProvider);
+    await syncWidget(db);
     HapticFeedback.mediumImpact();
     if (mounted) Navigator.of(context).pop();
   }

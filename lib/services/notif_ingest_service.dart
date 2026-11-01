@@ -7,6 +7,7 @@ import 'package:uangku/services/dedup_service.dart';
 import 'package:uangku/services/local_notif_service.dart';
 import 'package:uangku/services/parser_engine.dart';
 import 'package:uangku/services/platform_bridge.dart';
+import 'package:uangku/services/widget_sync.dart';
 
 /// Router notifikasi masuk → ParserEngine → DedupService → CategorizerService
 /// → simpan transaksi → notifikasi interaktif (TRD §2, AFD §3).
@@ -81,6 +82,9 @@ class NotifIngestService {
             ),
           ),
         );
+
+    // Widget home screen ikut segar setelah transaksi otomatis (DBD §7)
+    await syncWidget(db);
 
     await localNotif.showTransaction(
       txId: txId,

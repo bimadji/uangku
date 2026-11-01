@@ -6,6 +6,16 @@ Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 
 ---
 
+## BUG-020: Tombol banner merah "Listener terputus" tidak melakukan apa pun
+- Status: Diperbaiki di T-037a (PR #42)
+- Ditemukan: 2026-11-02, laporan pengguna: banner merah "Listener terputus oleh sistem" muncul dan notifikasi persisten "Uangku aktif" ada, tetapi menekan "Perbaiki" tidak mengubah apa pun.
+- Gejala: Banner merah tampil benar (isBound=false terdeteksi), tetapi tombolnya tidak membuka apa pun — hanya me-refresh state yang nilainya tetap sama.
+- Penyebab: Handler `onPressed` hanya memanggil `openNotificationAccessSettings()` bila `listenerEnabled == false`. Pada kasus izin terdaftar tapi binding putus, tombol hanya meng-invalidate provider — yang hasilnya tetap sama karena OS mengabaikan rebind. Diverifikasi di kode: cabang `if (!listenerEnabled)` tidak diambil pada kasus pengguna.
+- Lokasi kode: `lib/ui/dashboard_screen.dart` — `StatusBanner` (handler `onPressed` tombol Perbaiki/Buka Setelan).
+- Dampak: Pengguna terjebak di layar peringatan tanpa jalan keluar; satu-satunya pemulihan yang terbukti (toggle manual di Setelan) tidak bisa dicapai dari aplikasi.
+- Perbaikan: Tombol selalu memanggil `openNotificationAccessSettings()` lalu me-refresh ketiga provider (izin, binding, baterai). Label menyesuaikan konteks: "Perbaiki" bila izin mati, "Buka Setelan" bila izin ada tapi binding putus. Banner merah dengan teks ini sudah memuat instruksi toggle manual.
+- Pencegahan: `test/onboarding_test.dart` — "StatusBanner merah saat izin ada tapi binding putus (BUG-003)" kini menegaskan label "Buka Setelan" ADA dan mengetuknya tidak melempar (pemanggilan Settings dimock).
+
 ## BUG-019: Layar Detail/Koreksi belum sesuai mockup (label, format nominal, header)
 - Status: Diperbaiki di T-034 revisi (PR #38)
 - Ditemukan: 2026-11-01, laporan pengguna setelah membandingkan aplikasi di HP dengan `docs/mockups/option-a`.

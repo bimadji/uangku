@@ -107,7 +107,11 @@ void main() {
       // Bukan hijau, bukan peringatan baterai — melainkan pesan putus.
       expect(find.text('Listener otomatis aktif (BTN & GoPay)'), findsNothing);
       expect(find.textContaining('Listener terputus oleh sistem'), findsOneWidget);
-      expect(find.text('Perbaiki'), findsWidgets);
+      // Tombol langsung bertuliskan aksi sebenarnya: buka Setelan.
+      expect(find.text('Buka Setelan'), findsOneWidget);
+      // Mengetuknya tidak melempar (membuka Setelan dimock).
+      await tester.tap(find.text('Buka Setelan'));
+      await tester.pumpAndSettle();
     });
 
     testWidgets('Pengaturan menampilkan status AKTIF untuk listener & baterai',

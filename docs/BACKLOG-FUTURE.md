@@ -217,3 +217,14 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Jika HP dibiarkan lama tanpa membuka Uangku, MIUI bisa mematikan listener lagi dan transaksi hilang tanpa jejak sampai app dibuka. Notifikasi yang di-swipe sebelum app dibuka tetap hilang permanen.
 - Associated: `android/app/src/main/kotlin/com/bimadji/uangku/MainActivity.kt` (`onListenerConnected`, `onResume`), `lib/ui/dashboard_screen.dart` (chip kategori, padding FAB), FR-01, NFR-04, R-04, DBD §5.
 - Saran: Watchdog periodik + background isolate adalah satu paket pekerjaan (butuh keputusan pengguna); pertimbangkan juga menampilkan peringatan di Dashboard bila listener tidak live.
+
+## T-037a: Foreground service penjaga listener (opsi A, tahap 1)
+- Dilewati: Service sudah dibuat (`UangkuKeepAliveService` + `BootReceiver` + izin FOREGROUND_SERVICE/RECEIVE_BOOT_COMPLETED) tetapi **belum diuji di perangkat** saat laporan ini ditulis. Watchdog periodik (WorkManager) belum dipasang — hanya START_STICKY + rebind saat service start. Belum ada UI yang menunjukkan service berjalan selain notifikasi OS itu sendiri.
+- Risiko: Bila MIUI mengabaikan START_STICKY/BOOT_COMPLETED (perilaku OEM agresif), listener tetap mati; perlu T-037b (headless isolate) atau pendekatan lain.
+- Associated: `UangkuKeepAliveService.kt`, `BootReceiver.kt`, `AndroidManifest.xml`, `MainActivity` (3 method channel), FR-01, NFR-04, R-04, BUG-003.
+- Saran: Uji sekuens — (1) launch → live?, (2) force-stop + relaunch → live?, (3) reboot (butuh pengguna) → live? Catat hasilnya di laporan T-037a.
+
+## T-037b (diusulkan, belum dikerjakan): Headless isolate untuk pemrosesan saat app tertutup
+- Dilewati: Seluruhnya — headless `DartExecutor`, entrypoint `@pragma('vm:entry-point')`, dan sinkronisasi 2-isolate.
+- Risiko: Tanpa ini, transaksi yang masuk saat proses Flutter mati tetap hilang.
+- Saran: Kerjakan hanya bila T-037a terbukti belum cukup, atau bila DoD M2 menuntut tanpa syarat.

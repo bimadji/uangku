@@ -62,6 +62,24 @@ class PlatformBridge {
     return result ?? false;
   }
 
+  /// Menyalakan foreground service penjaga listener (T-037a).
+  /// Dipanggil saat onboarding selesai dan setiap app start.
+  static Future<void> startKeepAlive() async {
+    await _platformChannel.invokeMethod<bool>('startKeepAlive');
+  }
+
+  /// Mematikan foreground service (tidak dipakai produksi; untuk pengujian).
+  static Future<void> stopKeepAlive() async {
+    await _platformChannel.invokeMethod<bool>('stopKeepAlive');
+  }
+
+  /// Apakah foreground service sedang berjalan.
+  static Future<bool> isKeepAliveRunning() async {
+    final result =
+        await _platformChannel.invokeMethod<bool>('isKeepAliveRunning');
+    return result ?? false;
+  }
+
   /// Stream notifikasi masuk secara real-time dari OS
   static Stream<RawNotification> get notificationStream {
     return _eventChannel

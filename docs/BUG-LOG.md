@@ -38,7 +38,7 @@ Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 - Pencegahan: Tidak ada test otomatis (memerlukan pengukuran posisi FAB terhadap item terakhir); diverifikasi visual lewat screenshot pengguna.
 
 ## BUG-003: Listener notifikasi mati dan tidak pulih sendiri
-- Status: Diperbaiki di T-036 (PR #35)
+- Status: **DIBUKA KEMBALI** — perbaikan T-036 (onResume + retry rebind) terbukti TIDAK mempan diuji di perangkat 2026-11-01; dilanjutkan ke T-037a (PR #39)
 - Ditemukan: 2026-11-01, laporan pengguna: bayar via GoPay tetapi tidak tercatat di Uangku maupun di Log Parser, sementara notifikasinya masih ada di taskbar.
 - Gejala: Transaksi digital tidak masuk sama sekali. `adb shell dumpsys notification --noredact` menunjukkan `Live notification listeners` **kosong** meski `enabled_notification_listeners` masih memuat komponen Uangku dan proses app berjalan (`pidof` mengembalikan PID). Uptime perangkat 11 hari, jadi bukan efek restart.
 - Penyebab: MIUI/HyperOS melepas binding `NotificationListenerService` saat app lama tidak dipakai (manajemen baterai OEM). Perbaikan sebelumnya (T-016) hanya memanggil `NotificationListenerService.requestRebind()` sekali di `configureFlutterEngine`, sehingga setelah OS melepas service tidak ada yang meminta rebind lagi. Terverifikasi: memanggil rebind tidak memulihkan, sedangkan toggle izin lewat `cmd notification disallow_listener` + `allow_listener` langsung membuat listener LIVE.
@@ -46,6 +46,7 @@ Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 - Dampak: **Kehilangan data transaksi** (severity tinggi). Transaksi yang terjadi selama listener mati tidak pernah tersimpan; notifikasi yang sudah di-swipe hilang permanen. Data yang terlanjur hilang tidak bisa dipulihkan otomatis.
 - Perbaikan: (a) `onResume()` memanggil `requestListenerRebind()` sehingga setiap app dibuka service dipaksa tersambung lagi; (b) `onListenerConnected()` melakukan catch-up dengan mengiterasi `activeNotifications` dan mengirimkannya lewat jalur yang sama, sehingga notifikasi yang masih di tray saat service pulih ikut diproses (dedup mencegah pencatatan ganda).
 - Pencegahan: Tidak bisa diuji otomatis di CI (butuh perangkat + manajemen baterai OEM). Verifikasi manual: `adb shell dumpsys notification | grep "Live notification listeners"`.
+- Pembaruan 2026-11-01: eksperimen retry `requestRebind` bertahap (0/1.5/4/8 dtk) juga ditolak MIUI — aplikasi tetap hidup tanpa crash, binding tetap nol, sedangkan listener milik 2 aplikasi lain juga tidak live (pola sistemik OEM, bukan bug kode Uangku). Strategi diubah: foreground service penjaga proses (T-037a) alih-alih rebind reaktif.
 
 ## BUG-004: Widget home screen & status listener menampilkan data basi
 - Status: Diperbaiki di T-035 (PR #34)

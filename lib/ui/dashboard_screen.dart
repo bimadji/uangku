@@ -177,13 +177,15 @@ class StatusBanner extends ConsumerWidget {
               ),
               Semantics(
                 button: true,
-                label: 'Perbaiki status izin listener',
+                label: 'Buka Setelan akses notifikasi',
                 child: TextButton(
-                  onPressed: () {
-                    if (!listenerEnabled) {
-                      PlatformBridge.openNotificationAccessSettings();
-                    }
+                  // Selalu buka Setelan: satu-satunya pemulihan yang terbukti
+                  // di MIUI adalah toggle manual (retry kode diabaikan OS).
+                  onPressed: () async {
+                    await PlatformBridge
+                        .openNotificationAccessSettings();
                     ref.invalidate(listenerStatusProvider);
+                    ref.invalidate(listenerConnectedProvider);
                     ref.invalidate(batteryStatusProvider);
                   },
                   style: TextButton.styleFrom(
@@ -192,7 +194,7 @@ class StatusBanner extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                   child: Text(
-                    'Perbaiki',
+                    !listenerEnabled ? 'Perbaiki' : 'Buka Setelan',
                     style: TextStyle(fontSize: 12, color: fg),
                   ),
                 ),

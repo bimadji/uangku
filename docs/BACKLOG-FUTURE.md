@@ -211,3 +211,9 @@ Aturan pemakaiannya ada di `docs/07-EXECUTION-PLAN.md` §1.3.
 - Risiko: Setelah ponsel dipakai tanpa membuka app seharian, widget bisa menampilkan pengeluaran kemarin tanpa penanda "terakhir diperbarui".
 - Associated: `lib/services/widget_sync.dart` (baru), `lib/main.dart`, `lib/ui/dashboard_screen.dart`, `lib/services/notif_ingest_service.dart`, DBD §7, R-04.
 - Saran: Tambahkan label waktu update di layout widget, atau refresh terjadwal; bergantung pada keputusan apakah background isolate (T-011 backlog) akan dipasang.
+
+## T-036: Perbaikan listener mati + layout chip + FAB (bug laporan pengguna)
+- Dilewati: `activeNotifications` catch-up hanya memproses notifikasi yang **masih ada di tray** saat service tersambung kembali. Notifikasi yang sudah di-swipe hilang tidak bisa diselamatkan (Android tidak menyimpannya untuk listener). `requestRebind()` dipanggil di `onResume`, tetapi bila MIUI memblokir rebind (perilaku OEM di luar kendali aplikasi), satu-satunya pemulihan adalah user membuka app. Tidak ada watchdog periodik (WorkManager/AlarmManager) untuk mengecek service hidup saat app tidak dibuka — itu bagian dari pekerjaan background isolate yang belum diputuskan.
+- Risiko: Jika HP dibiarkan lama tanpa membuka Uangku, MIUI bisa mematikan listener lagi dan transaksi hilang tanpa jejak sampai app dibuka. Notifikasi yang di-swipe sebelum app dibuka tetap hilang permanen.
+- Associated: `android/app/src/main/kotlin/com/bimadji/uangku/MainActivity.kt` (`onListenerConnected`, `onResume`), `lib/ui/dashboard_screen.dart` (chip kategori, padding FAB), FR-01, NFR-04, R-04, DBD §5.
+- Saran: Watchdog periodik + background isolate adalah satu paket pekerjaan (butuh keputusan pengguna); pertimbangkan juga menampilkan peringatan di Dashboard bila listener tidak live.

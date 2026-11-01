@@ -97,6 +97,12 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        // Izin masih terdaftar tapi service sudah di-unbind OS (MIUI agresif).
+        requestListenerRebind()
+    }
+
     override fun onDestroy() {
         activityInstance = null
         eventSink = null
@@ -114,6 +120,13 @@ class UangkuNotificationListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
         super.onListenerConnected()
+        // Catch-up: notifikasi yang tiba saat service mati masih ada di tray.
+        // DedupService menolak yang sudah pernah tercatat, jadi aman.
+        try {
+            activeNotifications?.forEach { onNotificationPosted(it) }
+        } catch (_: Exception) {
+            // activeNotifications bisa melempar bila service baru putus
+        }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {

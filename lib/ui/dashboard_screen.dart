@@ -751,9 +751,7 @@ class _TransactionDetailScreenState
     return GestureDetector(
       onTap: () => setState(() => _categoryId = c.id),
       child: Container(
-        constraints: const BoxConstraints(minHeight: 48),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: active ? AppColors.accent : AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -1147,9 +1145,10 @@ class _QuickCashSheetState extends ConsumerState<QuickCashSheet> {
                   GestureDetector(
                     onTap: () => setState(() => _categoryId = c.id),
                     child: Container(
-                      constraints: const BoxConstraints(minHeight: 48),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      alignment: Alignment.center,
+                      // Tanpa `alignment`: Container ber-alignment mengisi lebar
+                      // induk, sehingga chip jadi satu kolom penuh (bug).
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 14),
                       decoration: BoxDecoration(
                         color: _categoryId == c.id
                             ? AppColors.accent
@@ -1273,8 +1272,9 @@ class _DashboardTab extends ConsumerWidget {
         ref.invalidate(feedProvider);
       },
       child: ListView(
+        // 120dp: beri ruang agar baris terakhir bisa digulir melewati FAB.
         padding: const EdgeInsets.fromLTRB(
-            AppSpacing.screen, 0, AppSpacing.screen, 84),
+            AppSpacing.screen, 0, AppSpacing.screen, 120),
         children: [
           const StatusBanner(),
           const SizedBox(height: AppSpacing.gap),
@@ -1480,7 +1480,7 @@ class _FeedTab extends ConsumerWidget {
 
               return ListView(
                 padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.screen, 8, AppSpacing.screen, 84),
+                    AppSpacing.screen, 8, AppSpacing.screen, 120),
                 children: [
                   for (final entry in groups.entries) ...[
                     Card(

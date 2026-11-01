@@ -65,7 +65,7 @@ void main() {
       await pumpDetail(tester);
 
       expect(find.text('SUMBER DANA'), findsOneWidget);
-      expect(find.text('WAKTU'), findsOneWidget);
+      expect(find.text('WAKTU POSTING'), findsOneWidget);
       expect(find.text('BTN'), findsWidgets);
     });
 
@@ -73,7 +73,7 @@ void main() {
         (tester) async {
       await pumpDetail(tester);
 
-      expect(find.text('NOMINAL (RUPIAH)'), findsOneWidget);
+      expect(find.text('NOMINAL (EDITABLE)'), findsOneWidget);
       expect(find.text('MERCHANT / KETERANGAN'), findsOneWidget);
       expect(find.text('KATEGORI (TAP UNTUK UBAH)'), findsOneWidget);
       expect(find.text('CATATAN PRIBADI (OPSIONAL)'), findsOneWidget);
@@ -175,4 +175,33 @@ void main() {
       expect(find.text('Uji Rule Parser'), findsOneWidget);
     });
   });
+
+  group('BUG-019: Nominal terformat & label mockup', () {
+    testWidgets('Nominal tampil terformat ribuan dengan prefix Rp', (tester) async {
+      await pumpDetail(tester);
+
+      final field = tester.widget<TextField>(
+        find.byKey(const ValueKey('detail-amount')),
+      );
+      expect(field.controller!.text, '22.000');
+      expect(field.decoration!.prefixText, 'Rp ');
+    });
+
+    testWidgets('Label "◀ Batal" dan "Hapus" tampil di app bar', (tester) async {
+      await pumpDetail(tester);
+
+      expect(find.text('Batal'), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      expect(find.text('Hapus'), findsOneWidget);
+    });
+
+    testWidgets('Ringkasan memakai label WAKTU POSTING & chip auto-capture',
+        (tester) async {
+      await pumpDetail(tester);
+
+      expect(find.text('WAKTU POSTING'), findsOneWidget);
+      expect(find.text('auto-capture'), findsOneWidget);
+    });
+  });
+
 }

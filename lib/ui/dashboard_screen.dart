@@ -24,19 +24,52 @@ final repositoryProvider = Provider<TransactionRepository>((ref) {
 
 final selectedPeriodProvider = StateProvider<Period>((ref) => Period.day);
 
+/// Offset bulan untuk arsip (T-036): 0 = bulan berjalan, -1 = bulan lalu, dst.
+/// Hanya berlaku saat periode = Bulan. Offset positif (masa depan) dilarang.
+final monthOffsetProvider = StateProvider<int>((ref) => 0);
+
+/// Awal bulan yang sedang dilihat (periode Bulan) atau hari ini.
+DateTime viewedAnchor(Period period, int monthOffset) {
+  final now = DateTime.now();
+  if (period != Period.month) return now;
+  final base = DateTime(now.year, now.month + monthOffset, 1);
+  // Jangan biarkan anchor melewati bulan berjalan.
+  final current = DateTime(now.year, now.month, 1);
+  return base.isAfter(current) ? current : base;
+}
+
+/// Nama bulan Indonesia singkat (mis. "Okt") untuk label segmen.
+String shortMonthYear(DateTime d) {
+  const names = ['',
+    'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+    'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  return names[d.month];
+}
+
+/// Nama bulan Indonesia untuk label arsip (mis. "Oktober 2026").
+String formatMonthYear(DateTime monthStart) {
+  const names = [
+    '', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ];
+  return '${names[monthStart.month]} ${monthStart.year}';
+}
+
 /// Tab aktif di bottom navigation (0=Dashboard, 1=Transaksi, 2=Pengaturan).
 final selectedTabProvider = StateProvider<int>((ref) => 0);
 
 final cashFlowProvider = FutureProvider<CashFlow>((ref) async {
   final repo = ref.watch(repositoryProvider);
   final period = ref.watch(selectedPeriodProvider);
-  return repo.cashFlow(period);
+  final offset = ref.watch(monthOffsetProvider);
+  return repo.cashFlow(period, at: viewedAnchor(period, offset));
 });
 
 final categoryExpensesProvider = FutureProvider<List<CategoryTotal>>((ref) async {
   final repo = ref.watch(repositoryProvider);
   final period = ref.watch(selectedPeriodProvider);
-  return repo.expenseByCategory(period);
+  final offset = ref.watch(monthOffsetProvider);
+  return repo.expenseByCategory(period, at: viewedAnchor(period, offset));
 });
 
 final feedProvider = FutureProvider<List<Transaction>>((ref) async {
@@ -255,6 +288,11 @@ class CashFlowCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final flow = ref.watch(cashFlowProvider);
+    final period = ref.watch(selectedPeriodProvider);
+    final offset = ref.watch(monthOffsetProvider);
+    final title = period == Period.month && offset != 0
+        ? 'Arus Kas · ${formatMonthYear(viewedAnchor(period, offset))}'
+        : 'Arus Kas';
 
     return Card(
       child: Padding(
@@ -262,7 +300,7 @@ class CashFlowCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Arus Kas', style: AppText.cardLabel),
+            Text(title, style: AppText.cardLabel),
             const SizedBox(height: 4),
             flow.when(
               loading: () => const SizedBox(
@@ -326,7 +364,6 @@ class PeriodSelector extends ConsumerWidget {
   static const _labels = {
     Period.day: 'Hari Ini',
     Period.week: 'Minggu Ini',
-    Period.month: 'Bulan Ini',
   };
 
   @override
@@ -343,8 +380,14 @@ class PeriodSelector extends ConsumerWidget {
           for (final period in Period.values)
             Expanded(
               child: GestureDetector(
-                onTap: () =>
-                    ref.read(selectedPeriodProvider.notifier).state = period,
+                onTap: () {
+                    ref.read(selectedPeriodProvider.notifier).state = period;
+                    // Kembali ke periode berjalan agar anchor tidak nyangkut
+                    // di bulan lama saat ganti jenis periode.
+                    ref.read(monthOffsetProvider.notifier).state = 0;
+                    ref.invalidate(cashFlowProvider);
+                    ref.invalidate(categoryExpensesProvider);
+                  },
                 child: Semantics(
                   button: true,
                   selected: current == period,
@@ -359,7 +402,12 @@ class PeriodSelector extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      _labels[period]!,
+                      period == Period.month
+                          ? (ref.watch(monthOffsetProvider) == 0
+                              ? 'Bulan Ini'
+                              : shortMonthYear(viewedAnchor(period,
+                                  ref.watch(monthOffsetProvider))))
+                          : _labels[period]!,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -392,6 +440,90 @@ class _OfflineBadge extends StatelessWidget {
       child: const Text('OFFLINE 100%', style: AppText.badge),
     );
   }
+}
+
+/// Navigator arsip bulanan (T-036): panah ‹ › + label "Oktober 2026".
+/// Hanya tampil saat periode = Bulan. Offset tidak boleh ke masa depan.
+class MonthNavigator extends ConsumerWidget {
+  const MonthNavigator({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final offset = ref.watch(monthOffsetProvider);
+    final anchor = viewedAnchor(Period.month, offset);
+    final isCurrent = offset >= 0;
+
+    Widget arrow(IconData icon, String label, VoidCallback? onTap) {
+      return Semantics(
+        button: true,
+        label: label,
+        enabled: onTap != null,
+        child: GestureDetector(
+          onTap: onTap,
+          child: Container(
+            width: 48,
+            height: 48,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: onTap == null
+                  ? Colors.transparent
+                  : AppColors.surface,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: onTap == null
+                    ? Colors.transparent
+                    : AppColors.border,
+              ),
+            ),
+            child: Icon(
+              icon,
+              size: 20,
+              color: onTap == null ? AppColors.border : AppColors.fg,
+            ),
+          ),
+        ),
+      );
+    }
+
+    void go(int delta) {
+      final next = offset + delta;
+      // Clamp: tidak boleh melompat ke masa depan.
+      ref.read(monthOffsetProvider.notifier).state =
+          next > 0 ? 0 : next;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          arrow(Icons.chevron_left, 'Bulan sebelumnya',
+              () => go(-1)),
+          const SizedBox(width: 8),
+          Semantics(
+            header: true,
+            child: Text(
+              '${isCurrent ? '' : ''}${formatMonthYear(anchor)}',
+              style: AppText.sectionTitle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          arrow(Icons.chevron_right, 'Bulan berikutnya',
+              isCurrent ? null : () => go(1)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Saring transaksi ke bulan kalender anchor (arsip, T-036).
+List<Transaction> _inMonth(List<Transaction> items, DateTime anchor) {
+  final start = DateTime(anchor.year, anchor.month, 1);
+  final end = DateTime(anchor.year, anchor.month + 1, 1);
+  return items.where((t) {
+    final d = DateTime.fromMillisecondsSinceEpoch(t.occurredAt);
+    return !d.isBefore(start) && d.isBefore(end);
+  }).toList();
 }
 
 /// Baris transaksi bergaya mockup `.tx-item`: avatar 40px, badge sumber,
@@ -1369,7 +1501,19 @@ class _DashboardTab extends ConsumerWidget {
           const StatusBanner(),
           const SizedBox(height: AppSpacing.gap),
           const PeriodSelector(),
-          const SizedBox(height: AppSpacing.gap),
+          Consumer(
+            builder: (context, ref, _) {
+              final period = ref.watch(selectedPeriodProvider);
+              if (period != Period.month) return const SizedBox.shrink();
+              return const Column(
+                children: [
+                  SizedBox(height: AppSpacing.tight),
+                  MonthNavigator(),
+                  SizedBox(height: AppSpacing.gap),
+                ],
+              );
+            },
+          ),
           const CashFlowCard(),
           const SizedBox(height: AppSpacing.gap),
           const CategoryDonutChart(),
@@ -1407,25 +1551,38 @@ class _DashboardTab extends ConsumerWidget {
                       ),
                     ],
                   ),
-                  feed.when(
-                    loading: () => const Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Center(child: CircularProgressIndicator()),
-                    ),
-                    error: (e, _) => ErrorState(
-                      message: 'Gagal memuat transaksi: $e',
-                      onRetry: () => ref.invalidate(feedProvider),
-                    ),
-                    data: (items) => items.isEmpty
-                        ? const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: EmptyState(
-                              icon: Icons.add_circle_outline,
-                              message:
-                                  'Belum ada transaksi di periode ini.\nTap + untuk catat pengeluaran tunai.',
-                            ),
-                          )
-                        : Column(
+                  Builder(
+                    builder: (context) {
+                      final period =
+                          ref.watch(selectedPeriodProvider);
+                      final offset = ref.watch(monthOffsetProvider);
+                      return feed.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.all(32),
+                          child:
+                              Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (e, _) => ErrorState(
+                          message: 'Gagal memuat transaksi: $e',
+                          onRetry: () => ref.invalidate(feedProvider),
+                        ),
+                        data: (all) {
+                          // Arsip: preview hanya transaksi di bulan terpilih.
+                          final items = period == Period.month && offset != 0
+                              ? _inMonth(all,
+                                  viewedAnchor(period, offset))
+                              : all;
+                          if (items.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: EmptyState(
+                                icon: Icons.add_circle_outline,
+                                message:
+                                    'Belum ada transaksi di periode ini.\nTap + untuk catat pengeluaran tunai.',
+                              ),
+                            );
+                          }
+                          return Column(
                             children: [
                               for (final t in items.take(5))
                                 TransactionRow(
@@ -1441,7 +1598,10 @@ class _DashboardTab extends ConsumerWidget {
                                   ),
                                 ),
                             ],
-                          ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ],
               ),

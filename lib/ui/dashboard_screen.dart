@@ -206,14 +206,17 @@ class SourceBadge extends StatelessWidget {
 }
 
 class ModeChip extends StatelessWidget {
-  const ModeChip({super.key, required this.origin});
+  const ModeChip({super.key, required this.origin, this.label});
   final TxOrigin origin;
+
+  /// Label kustom (mockup layar Detail memakai "auto-capture").
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     final isAuto = origin == TxOrigin.auto;
     return Text(
-      isAuto ? 'auto' : 'manual',
+      label ?? (isAuto ? 'auto' : 'manual'),
       style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
     );
   }
@@ -672,8 +675,14 @@ class _TransactionDetailScreenState
   @override
   void initState() {
     super.initState();
-    _amountController =
-        TextEditingController(text: widget.tx.amount.toString());
+    // Tampilkan langsung terformat seperti mockup ("22.000") — digit asli
+    // dibaca ulang oleh _save lewat regex.
+    _amountController = TextEditingController(
+      text: widget.tx.amount.toString().replaceAllMapped(
+            RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+            (m) => '${m[1]}.',
+          ),
+    );
     _merchantController =
         TextEditingController(text: widget.tx.merchant ?? '');
     _noteController = TextEditingController(text: widget.tx.note ?? '');
@@ -689,7 +698,9 @@ class _TransactionDetailScreenState
   }
 
   Future<void> _save() async {
-    final amount = int.tryParse(_amountController.text);
+    // Input menampilkan pemisah ribuan (mockup "Rp 22.000") -> ambil digitnya.
+    final amount = int.tryParse(
+        _amountController.text.replaceAll(RegExp(r'[^0-9]'), ''));
     if (amount == null || amount <= 0 || _saving) return;
     setState(() => _saving = true);
 
@@ -771,24 +782,37 @@ class _TransactionDetailScreenState
     );
   }
 
+  /// Label kecil di atas field (mockup `.form-label`, 12/600 muted).
+  Widget _label(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(text, style: AppText.formLabel),
+      );
+
   @override
   Widget build(BuildContext context) {
     final categories = ref.watch(categoryListProvider);
     final date = DateTime.fromMillisecondsSinceEpoch(widget.tx.occurredAt);
-    final dateStr =
-        '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year} '
-        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    final dateStr = _formatDateTime(date);
 
     return Scaffold(
       appBar: AppBar(
-        leading: TextButton(
+        leadingWidth: 96,
+        leading: TextButton.icon(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
+          icon: const Icon(Icons.arrow_back, size: 16, color: AppColors.accent),
+          label: const Text(
             'Batal',
-            style: TextStyle(fontSize: 13, color: AppColors.accent),
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.accent,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
           ),
         ),
-        leadingWidth: 72,
         title: const Text('Detail Transaksi', style: AppText.screenTitle),
         centerTitle: true,
         actions: [
@@ -800,7 +824,11 @@ class _TransactionDetailScreenState
             ),
             child: const Text(
               'Hapus',
-              style: TextStyle(fontSize: 13, color: AppColors.expense),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppColors.expense,
+              ),
             ),
           ),
         ],
@@ -809,8 +837,9 @@ class _TransactionDetailScreenState
         padding: const EdgeInsets.fromLTRB(
             AppSpacing.screen, 8, AppSpacing.screen, 24),
         children: [
-          // Ringkasan sumber & waktu (read-only)
+          // Ringkasan sumber & waktu — mockup memakai latar surface-subtle.
           Card(
+            color: AppColors.surfaceSubtle,
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.card),
               child: Row(
@@ -818,26 +847,31 @@ class _TransactionDetailScreenState
                 children: [
                   Expanded(
                     child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('SUMBER DANA', style: AppText.badge),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 6,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          SourceBadge(source: widget.tx.source),
-                          ModeChip(origin: widget.tx.origin),
-                        ],
-                      ),
-                    ],
-                  ),
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('SUMBER DANA', style: AppText.badge),
+                        const SizedBox(height: 4),
+                        Wrap(
+                          spacing: 4,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            SourceBadge(source: widget.tx.source),
+                            ModeChip(
+                              origin: widget.tx.origin,
+                              label: widget.tx.origin == TxOrigin.auto
+                                  ? 'auto-capture'
+                                  : 'manual',
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text('WAKTU', style: AppText.badge),
+                      const Text('WAKTU POSTING', style: AppText.badge),
                       const SizedBox(height: 4),
                       Text(dateStr, style: AppText.caption),
                     ],
@@ -848,42 +882,43 @@ class _TransactionDetailScreenState
           ),
           const SizedBox(height: AppSpacing.gap),
 
-          // Form edit
+          // Form edit — label di atas field, tanpa floating label (mockup).
           Card(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.card),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('NOMINAL (RUPIAH)', style: AppText.formLabel),
-                  const SizedBox(height: 6),
+                  _label('NOMINAL (EDITABLE)'),
                   TextField(
+                    key: const ValueKey('detail-amount'),
                     controller: _amountController,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [_ThousandsInputFormatter()],
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
+                      color: AppColors.expense,
                       fontFeatures: [FontFeature.tabularFigures()],
                     ),
                     decoration: const InputDecoration(
-                      labelText: 'Nominal',
+                      prefixText: 'Rp ',
+                      hintText: '0',
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text('MERCHANT / KETERANGAN', style: AppText.formLabel),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 14),
+                  _label('MERCHANT / KETERANGAN'),
                   TextField(
+                    key: const ValueKey('detail-merchant'),
                     controller: _merchantController,
                     decoration: const InputDecoration(
-                      labelText: 'Merchant / Keterangan',
+                      hintText: 'Nama merchant atau keterangan',
                       border: OutlineInputBorder(),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text('KATEGORI (TAP UNTUK UBAH)',
-                      style: AppText.formLabel),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 14),
+                  _label('KATEGORI (TAP UNTUK UBAH)'),
                   categories.maybeWhen(
                     data: (cats) => Wrap(
                       spacing: 6,
@@ -896,14 +931,13 @@ class _TransactionDetailScreenState
                     ),
                     orElse: () => const SizedBox.shrink(),
                   ),
-                  const SizedBox(height: 12),
-                  const Text('CATATAN PRIBADI (OPSIONAL)',
-                      style: AppText.formLabel),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 14),
+                  _label('CATATAN PRIBADI (OPSIONAL)'),
                   TextField(
+                    key: const ValueKey('detail-note'),
                     controller: _noteController,
                     decoration: const InputDecoration(
-                      labelText: 'Catatan pribadi',
+                      hintText: 'Tambah catatan kecil...',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -923,6 +957,38 @@ class _TransactionDetailScreenState
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Format waktu tampilan Detail/Koreksi (mockup: "30 Okt 2026 · 12:45").
+String _formatDateTime(DateTime d) {
+  const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
+                  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+  final hh = d.hour.toString().padLeft(2, '0');
+  final mm = d.minute.toString().padLeft(2, '0');
+  return '${d.day} ${months[d.month]} ${d.year} · $hh:$mm';
+}
+
+/// Sisipkan pemisah ribuan saat mengetik nominal (mockup: "Rp 22.000").
+/// Hanya mengubah tampilan; digit asli dibaca ulang oleh `_save`.
+class _ThousandsInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      return const TextEditingValue(text: '');
+    }
+    final grouped = digits.replaceAllMapped(
+      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
+      (m) => '${m[1]}.',
+    );
+    return TextEditingValue(
+      text: grouped,
+      selection: TextSelection.collapsed(offset: grouped.length),
     );
   }
 }

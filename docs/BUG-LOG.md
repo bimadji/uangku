@@ -6,6 +6,17 @@ Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 
 ---
 
+## BUG-019: Layar Detail/Koreksi belum sesuai mockup (label, format nominal, header)
+- Status: Diperbaiki di T-034 revisi (PR #38)
+- Ditemukan: 2026-11-01, laporan pengguna setelah membandingkan aplikasi di HP dengan `docs/mockups/option-a`.
+- Gejala: (a) nominal di form tampil sebagai digit mentah "22000" tanpa prefix "Rp" dan tanpa pemisah ribuan; (b) setiap field punya **dua label** — label uppercase di atas *dan* floating label di dalam kotak; (c) label ringkasan berbunyi "WAKTU", mockup "WAKTU POSTING"; (d) chip mode berbunyi "auto", mockup "auto-capture"; (e) tombol kembali hanya teks "Batal" tanpa panah; (f) kartu ringkasan berlatar putih, mockup `surface-subtle`.
+- Penyebab: Implementasi T-034 mengikuti struktur mockup tetapi memakai widget default Material (`InputDecoration.labelText`) alih-alih label terpisah di atas field seperti `.form-label` pada mockup; nilai nominal dimasukkan apa adanya dari `tx.amount.toString()`; dan beberapa teks/label disalin dari versi sebelumnya, bukan dari markup mockup.
+- Lokasi kode: `lib/ui/dashboard_screen.dart` — `_TransactionDetailScreenState.build`, `_categoryChip`, `_label`, serta `ModeChip` (parameter `label` baru).
+- Dampak: Tampilan menyimpang dari mockup yang disepakati (kualitas visual), dan nominal mentah lebih sulit dibaca. Tidak ada data salah; `_save` tetap menyimpan nilai yang benar.
+- Perbaikan: label dipindah ke atas field (`_label` memakai `AppText.formLabel`), `labelText` dihapus dari semua `InputDecoration`; nominal memakai `prefixText: 'Rp '` + `_ThousandsInputFormatter` sehingga tampil "22.000" dan nilai awal langsung terformat; `_save` membaca digit lewat `replaceAll(RegExp(r'[^0-9]'), '')` agar tetap benar; tombol Batal memakai ikon panah 16px + teks 16/700 accent; Hapus 14/700 expense; kartu ringkasan berlatar `surfaceSubtle`; label "WAKTU POSTING"; chip mode "auto-capture"/"manual"; field diberi `ValueKey` (`detail-amount`, `detail-merchant`, `detail-note`) agar test stabil.
+- Pencegahan: `test/detail_logparser_mockup_test.dart` — "Nominal tampil terformat ribuan dengan prefix Rp", "Label ◀ Batal dan Hapus tampil di app bar", "Ringkasan memakai label WAKTU POSTING & chip auto-capture".
+- Catatan: Panel "TEKS NOTIFIKASI ASLI" pada mockup **belum diimplementasikan** — butuh relasi transaksi↔`parser_logs` (perubahan skema), tercatat di `docs/BACKLOG-FUTURE.md` entri T-034.
+
 ## BUG-001: Chip kategori tampil satu kolom penuh (bukan wrap)
 - Status: Diperbaiki di T-036 (PR #35)
 - Ditemukan: 2026-11-01, setelah T-034, dari screenshot pengguna di `docs/realTest/after/` (layar Catat Tunai Cepat & Catat Pemasukan).

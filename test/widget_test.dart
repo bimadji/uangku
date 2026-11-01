@@ -194,8 +194,7 @@ void main() {
     expect(find.text('Detail Transaksi'), findsOneWidget);
 
     // Edit merchant
-    await tester.enterText(
-        find.widgetWithText(TextField, 'Merchant / Keterangan'), 'Warung Baru');
+    await tester.enterText(find.byKey(const ValueKey('detail-merchant')), 'Warung Baru');
     // Tombol simpan ada di bawah form panjang (mockup) — scroll dulu.
     await tester.scrollUntilVisible(
       find.text('Simpan Perubahan'),

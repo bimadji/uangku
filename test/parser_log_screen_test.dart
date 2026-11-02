@@ -140,7 +140,7 @@ void main() {
       // Pilih rule pertama
       await tester.tap(find.text('Rule (per aplikasi)'));
       await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('GoPay').last);
+      await tester.tap(find.text('GoPay · income').last);
       await tester.pumpAndSettle();
 
       // Ganti teks agar cocok dengan pattern GoPay

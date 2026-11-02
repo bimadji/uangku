@@ -60,6 +60,22 @@ void main() {
       expectedMerchant: 'BTN Internet Banking App',
     ),
 
+    // 1b. GoPay Pembayaran Berhasil / Expense
+    const ParserFixture(
+      name: 'GoPay: Pembayaran Berhasil Dompet Wawa',
+      raw: RawNotification(
+        packageName: 'com.gojek.gopay',
+        title: 'Pembayaran berhasil!',
+        text: 'Mantaap, kamu barusan bayar Rp50.000 ke Dompet Wawa.',
+        postTime: 1793661555212,
+      ),
+      expectedSuccess: true,
+      expectedAppLabel: 'GoPay',
+      expectedTxType: TxType.expense,
+      expectedAmount: 50000,
+      expectedMerchant: 'Dompet Wawa',
+    ),
+
     // 2. Bale by BTN QRIS Payment (Merchant tertangkap, amount 0 karena tidak ada di notifikasi bank)
     const ParserFixture(
       name: 'Bale BTN: QRIS Payment Geprek Maszeh',

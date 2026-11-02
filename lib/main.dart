@@ -16,6 +16,8 @@ import 'package:uangku/services/parser_engine.dart';
 import 'package:uangku/services/platform_bridge.dart';
 import 'package:uangku/services/widget_bridge.dart';
 import 'package:uangku/services/widget_sync.dart';
+import 'package:uangku/services/watchdog.dart' as watchdog;
+import 'package:workmanager/workmanager.dart';
 import 'package:uangku/ui/app_theme.dart';
 import 'package:uangku/ui/dashboard_screen.dart';
 import 'package:uangku/ui/onboarding_screen.dart';
@@ -40,6 +42,16 @@ void main() async {
     dedup: DedupService(db),
     categorizer: categorizer,
     localNotif: localNotif,
+  );
+
+  // Watchdog T-037c: jadwalkan pemulihan listener berkala (BUG-003).
+  await Workmanager().initialize(watchdog.callbackDispatcher);
+  await Workmanager().registerPeriodicTask(
+    'uangku-watchdog',
+    watchdog.kWatchdogTaskName,
+    // Interval minimum yang diizinkan Android = 15 menit.
+    frequency: const Duration(minutes: 15),
+        existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
   );
 
   runApp(

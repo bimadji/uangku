@@ -79,6 +79,10 @@ class MainActivity : FlutterActivity() {
                 "isListenerConnected" -> {
                     result.success(UangkuNotificationListener.isBound)
                 }
+                "requestListenerRebind" -> {
+                    UangkuKeepAliveService.rebindListener(this)
+                    result.success(true)
+                }
                 "startKeepAlive" -> {
                     UangkuKeepAliveService.start(this)
                     result.success(true)

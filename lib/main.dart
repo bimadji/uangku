@@ -95,6 +95,8 @@ class _UangkuAppState extends ConsumerState<UangkuApp>
     WidgetBridge.clicks.listen(_handleWidgetClick);
     _refreshWidget();
     _handleColdStartIntent();
+    // Tarik notifikasi yang sempat tertinggal di tray saat app tidur / ditutup
+    PlatformBridge.syncActiveNotifications();
   }
 
   /// Widget home screen menampilkan pengeluaran hari ini (DBD §7).
@@ -112,6 +114,7 @@ class _UangkuAppState extends ConsumerState<UangkuApp>
     ref.invalidate(listenerConnectedProvider);
     ref.invalidate(batteryStatusProvider);
     _refreshWidget();
+    PlatformBridge.syncActiveNotifications();
   }
 
   /// App dibuka lewat widget/tile "+" saat masih mati (cold start).

@@ -40,6 +40,29 @@ void main() {
       expect(logs.first.ruleId, candidate.ruleId);
     });
 
+    test('Parse GoPay Pembayaran: mengekstrak nominal, merchant, dan tipe expense',
+        () async {
+      const notif = RawNotification(
+        packageName: 'com.gojek.gopay',
+        title: 'Pembayaran berhasil!',
+        text: 'Mantaap, kamu barusan bayar Rp50.000 ke Dompet Wawa.',
+        postTime: 1793661555212,
+      );
+
+      final candidate = await parser.parse(notif);
+      expect(candidate, isNotNull);
+      expect(candidate!.appLabel, 'GoPay');
+      expect(candidate.txType, TxType.expense);
+      expect(candidate.amount, 50000);
+      expect(candidate.merchant, 'Dompet Wawa');
+      expect(candidate.occurredAt, 1793661555212);
+
+      final logs = await db.select(db.parserLogs).get();
+      expect(logs, hasLength(1));
+      expect(logs.first.status, ParserLogStatus.parsed);
+      expect(logs.first.ruleId, candidate.ruleId);
+    });
+
     test('Parse Bale by BTN QRIS: mengekstrak merchant, tipe expense, dan amount 0',
         () async {
       const notif = RawNotification(

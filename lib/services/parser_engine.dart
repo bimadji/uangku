@@ -95,6 +95,20 @@ class ParserEngine {
             ),
           );
     }
+
+    // 5. GoPay: Pembayaran Berhasil / Expense (Sampel: Mantaap, kamu barusan bayar Rp50.000 ke Dompet Wawa.)
+    if (!await exists(r'bayar Rp(?<amount>[\d\.]+) ke (?<merchant>.*?)\.?$')) {
+      await db.into(db.parserRules).insert(
+            ParserRulesCompanion.insert(
+              packageName: 'com.gojek.gopay',
+              appLabel: 'GoPay',
+              txType: TxType.expense,
+              pattern: r'bayar Rp(?<amount>[\d\.]+) ke (?<merchant>.*?)\.?$',
+              priority: const Value(10),
+              enabled: const Value(1),
+            ),
+          );
+    }
   }
 
   /// Eksekusi parsing terhadap notifikasi mentah

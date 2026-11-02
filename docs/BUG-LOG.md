@@ -6,6 +6,16 @@ Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 
 ---
 
+## BUG-023: EventChannel receiveBroadcastStream ganda saling menimpa
+- Status: Diperbaiki di PR #46
+- Ditemukan: 2026-11-02, laporan pengguna: parser tidak mencatat notifikasi di tray sama sekali padahal status listener hijau.
+- Gejala: Notifikasi dikirim dari Kotlin lewat EventChannel, tetapi `NotifIngestService` tidak pernah menerima event apa pun.
+- Penyebab: `PlatformBridge.notificationStream` dan `PlatformBridge.rawEvents` keduanya memanggil `_eventChannel.receiveBroadcastStream()`. Di Flutter, setiap pemanggilan membuat `StreamController` baru dan menimpa binary messenger handler dari channel yang sama. Panggilan kedua (`rawEvents`) menimpa panggilan pertama (`notificationStream`), dan `rawEvents` hanya menangani `listener_status` sehingga seluruh payload notifikasi bank terbuang diam-diam.
+- Lokasi kode: `lib/services/platform_bridge.dart` (`_broadcastRawEvents`, `notificationStream`, `rawEvents`).
+- Dampak: Notifikasi transaksi bank tidak pernah diproses oleh parser.
+- Perbaikan: Buat satu stream tunggal `_broadcastRawEvents` yang di-`asBroadcastStream()`. `notificationStream` memfilter data dari stream yang sama tanpa memanggil `receiveBroadcastStream()` berulang.
+- Pencegahan: Unit test verifikasi aliran stream.
+
 ## BUG-022: Notifikasi hilang karena eventSink null saat app di background
 - Status: Diperbaiki di PR #45
 - Ditemukan: 2026-11-02, laporan pengguna: beli makan siang via BTN/GoPay tidak tercatat di Uangku dan parser log kosong, padahal status listener hijau dan notifikasi masih ada di tray.

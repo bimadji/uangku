@@ -94,19 +94,17 @@ class PlatformBridge {
         await _platformChannel.invokeMethod<int>('syncActiveNotifications');
     return result ?? 0;
   }
+  // Stream tunggal yang dibroadcast agar tidak saling menimpa handler binaryMessenger
+  static final Stream<Map<dynamic, dynamic>> _broadcastRawEvents =
+      _eventChannel.receiveBroadcastStream().map((e) => e as Map<dynamic, dynamic>).asBroadcastStream();
 
-  /// Stream notifikasi masuk secara real-time dari OS
+  /// Stream notifikasi masuk secara real-time dari OS (hanya payload notifikasi bank)
   static Stream<RawNotification> get notificationStream {
-    return _eventChannel
-        .receiveBroadcastStream()
-        .map((event) => RawNotification.fromMap(event as Map<dynamic, dynamic>));
+    return _broadcastRawEvents
+        .where((event) => event['type'] != 'listener_status')
+        .map((event) => RawNotification.fromMap(event));
   }
 
   /// Stream mentah event channel: payload notifikasi DAN event kontrol
-  /// (`{"type": "listener_status", "connected": bool}`).
-  static Stream<Map<dynamic, dynamic>> get rawEvents {
-    return _eventChannel
-        .receiveBroadcastStream()
-        .map((event) => event as Map<dynamic, dynamic>);
-  }
+  static Stream<Map<dynamic, dynamic>> get rawEvents => _broadcastRawEvents;
 }

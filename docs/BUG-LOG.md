@@ -209,3 +209,12 @@ Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 - Dampak: Build lokal gagal sampai cache dibersihkan; tidak memengaruhi aplikasi atau CI.
 - Perbaikan: Hapus `build/home_widget` dan jalankan `gradlew assembleRelease -Pkotlin.incremental=false`. Belum ada perbaikan permanen.
 - Pencegahan: Tidak ada; bila berulang, pertimbangkan `kotlin.incremental=false` permanen di `gradle.properties`.
+## BUG-021: Binding listener mati setiap pagi dan tidak pulih sendiri
+- Status: **Terbuka** — mitigasi T-037c (watchdog) terpasang di HP, hasil lapangan ditunggu
+- Ditemukan: 2026-11-02, laporan pengguna: setiap pagi listener harus diperbaiki manual; terkonfirmasi saat diagnosa (izin terdaftar + service jalan + binding 0; uptime HP 11 hari).
+- Gejala: Setiap pagi, pembayaran via GoPay tidak tercatat. Notifikasi transaksi masih ada di tray. Banner merah "Listener terputus" tampil; menekan Perbaiki (sebelum PR #42) tidak melakukan apa pun.
+- Penyebab: MIUI melepas binding NotificationListenerService setelah app lama tidak dipakai (idle malam). Semua jalur programatik terbukti ditolak: `requestRebind` (sekali maupun retry bertahap) diabaikan; foreground service menjaga proses tetap hidup tetapi tidak memaksa OS mengikat ulang. Toggle izin manual adalah satu-satunya pemulih yang terverifikasi. Perbaikan sebelumnya (BUG-003 PR #35/#42) menutup kasus "tombol tidak berfungsi", tetapi bukan akar masalah pemulihan.
+- Lokasi kode: `android/app/src/main/kotlin/com/bimadji/uangku/MainActivity.kt` (requestRebind), `UangkuKeepAliveService.kt` (penjaga proses), `lib/services/watchdog.dart` (baru, T-037c).
+- Dampak: Transaksi digital yang masuk selama binding mati tidak tercatat sampai pengguna membuka app; notifikasi yang masih di tray diselamatkan oleh catch-up (`onListenerConnected`), sisanya hilang permanen. Data yang sudah hilang tidak dapat dipulihkan.
+- Perbaikan (mitigasi aktif): Watchdog WorkManager 15 menit membangunkan proses dan memanggil rebind dari konteks yang diizinkan sistem. Status: diuji lapangan; hasil negatif akan dicatat jujur di entri ini dan T-037b (headless isolate) dievaluasi.
+- Pencegahan: Tidak dapat diuji otomatis (perilaku OEM, butuh idle waktu nyata). Verifikasi manual: tinggalkan app mati >15 menit lalu cek `dumpsys notification | grep Live`.

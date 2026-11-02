@@ -579,3 +579,12 @@ Tidak ada keputusan diam-diam: jika spike melebihi batas waktu, ambil pilihan ya
 - **Eksklusi**: tanpa pagination feed arsip (feed tab tetap kronologis semua); tanpa ekspor; tanpa kalender picker.
 - **Kriteria sukses**: cash flow + chart + preview mengikuti bulan lalu setelah navigasi; panah kanan disabled di bulan berjalan; mode Hari me-reset offset; 8 test widget/unit baru hijau.
 - **Ukuran**: S.
+
+#### T-037c — Watchdog pemulihan listener (WorkManager) (M6.9)
+- **Branch**: `feat/t-037c-watchdog`
+- **Dep**: T-037a
+- **Cover**: FR-01, NFR-04, R-04; BUG-003.
+- **Perubahan**: dependency `workmanager`; `lib/services/watchdog.dart` (callbackDispatcher + `repairListener()`); registrasi periodic task 15 menit (`ExistingPeriodicWorkPolicy.keep`); Kotlin method channel `requestListenerRebind` → `UangkuKeepAliveService.rebindListener()`.
+- **Eksklusi**: tanpa perubahan parser/dedup; interval tetap 15 menit (batas minimum Android); tanpa penghapusan toggle manual.
+- **Kriteria sukses**: job terdaftar di `dumpsys jobscheduler`; test suite tetap hijau; verifikasi lapangan (binding pulih tanpa buka app) ditandai sebagai tugas manual pengguna — hasil negatif akan dicatat jujur di BUG-003.
+- **Ukuran**: S.

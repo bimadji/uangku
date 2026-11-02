@@ -88,6 +88,13 @@ class PlatformBridge {
     return result ?? false;
   }
 
+  /// Menarik seluruh notifikasi aktif di tray yang belum sempat tertangkap (saat app dibuka).
+  static Future<int> syncActiveNotifications() async {
+    final result =
+        await _platformChannel.invokeMethod<int>('syncActiveNotifications');
+    return result ?? 0;
+  }
+
   /// Stream notifikasi masuk secara real-time dari OS
   static Stream<RawNotification> get notificationStream {
     return _eventChannel

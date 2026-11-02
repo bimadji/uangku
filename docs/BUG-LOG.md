@@ -6,6 +6,16 @@ Aturan pencatatan ada di `docs/07-EXECUTION-PLAN.md` §1.4.
 
 ---
 
+## BUG-022: Notifikasi hilang karena eventSink null saat app di background
+- Status: Diperbaiki di PR #45
+- Ditemukan: 2026-11-02, laporan pengguna: beli makan siang via BTN/GoPay tidak tercatat di Uangku dan parser log kosong, padahal status listener hijau dan notifikasi masih ada di tray.
+- Gejala: Notifikasi transaksi tiba saat HP mati/app di latar belakang, listener menerima broadcast di Kotlin, tetapi tidak ada transaksi baru dan tidak ada entri di `parser_logs`.
+- Penyebab: `MainActivity.sendNotificationEvent()` membuang payload diam-diam jika `activityInstance` atau `eventSink` bernilai null (karena Flutter UI sedang tidur/di-freeze oleh Android). Fungsi catch-up hanya ada di `onListenerConnected()` yang tidak pernah dipanggil ulang jika listener tidak pernah terputus dari OS.
+- Lokasi kode: `android/app/src/main/kotlin/com/bimadji/uangku/MainActivity.kt` (`syncActiveNotifications`), `lib/services/platform_bridge.dart`, `lib/main.dart` (`initState` & `didChangeAppLifecycleState`).
+- Dampak: Transaksi yang masuk saat app tidak di layar depan tidak tercatat sampai diperbaiki.
+- Perbaikan: Tambahkan method `syncActiveNotifications()` di Kotlin yang mengambil seluruh notifikasi aktif dari `activeNotifications` di tray dan memprosesnya; panggil method ini secara proaktif setiap kali app dibuka (`initState`) dan setiap kali app kembali ke depan (`onResume`/`didChangeAppLifecycleState`).
+- Pencegahan: Unit test `PlatformBridge` & verifikasi runtime saat app dibuka.
+
 ## BUG-020: Tombol banner merah "Listener terputus" tidak melakukan apa pun
 - Status: Diperbaiki di T-037a (PR #42)
 - Ditemukan: 2026-11-02, laporan pengguna: banner merah "Listener terputus oleh sistem" muncul dan notifikasi persisten "Uangku aktif" ada, tetapi menekan "Perbaiki" tidak mengubah apa pun.

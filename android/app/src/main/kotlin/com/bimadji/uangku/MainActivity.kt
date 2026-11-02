@@ -83,6 +83,10 @@ class MainActivity : FlutterActivity() {
                     UangkuKeepAliveService.rebindListener(this)
                     result.success(true)
                 }
+                "syncActiveNotifications" -> {
+                    val count = UangkuNotificationListener.instance?.syncActiveNotifications() ?: 0
+                    result.success(count)
+                }
                 "startKeepAlive" -> {
                     UangkuKeepAliveService.start(this)
                     result.success(true)
@@ -152,6 +156,32 @@ class UangkuNotificationListener : NotificationListenerService() {
          * listener benar-benar terhubung, bukan sekadar izin terdaftar. */
         @Volatile
         var isBound: Boolean = false
+
+        var instance: UangkuNotificationListener? = null
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        instance = this
+    }
+
+    override fun onDestroy() {
+        instance = null
+        super.onDestroy()
+    }
+
+    fun syncActiveNotifications(): Int {
+        var count = 0
+        try {
+            activeNotifications?.forEach { sbn ->
+                val pkg = sbn?.packageName
+                if (pkg != null && WHITELIST.contains(pkg)) {
+                    onNotificationPosted(sbn)
+                    count++
+                }
+            }
+        } catch (_: Exception) {}
+        return count
     }
 
     override fun onListenerConnected() {
